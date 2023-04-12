@@ -74,3 +74,11 @@ CREATE TABLE IF NOT EXISTS about_us(
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS swipes(
+  swipe_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
+  swipe_direction TEXT,
+  user_id INTEGER ,
+  swiped_user_id INTEGER,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
