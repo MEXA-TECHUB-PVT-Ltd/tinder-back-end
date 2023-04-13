@@ -40,6 +40,8 @@ app.use("/emailVerification", require("./app/routes/EmailVerification/EmailVerif
 app.use("/terms_and_condtions" , require("./app/routes/Main/terms_and_conditionsRoute"))
 app.use("/privacy_policy" , require("./app/routes/Main/privacy_policyRoute"))
 app.use("/about_us" , require("./app/routes/Main/about_usRoute"))
+app.use("/swipes" , require("./app/routes/Swipes/swipeRoute"))
+
 
 
 

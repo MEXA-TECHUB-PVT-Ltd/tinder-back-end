@@ -4,12 +4,12 @@ const fs = require('fs');
 const path = require('path');
 
 
-console.log(process.env.HOST)
+console.log(process.env.USER_NAME)
 
 const pool = new Pool ({
     host: process.env.HOST, 
     port : process.env.DB_PORT,
-    user : process.env.USER ,
+    user : process.env.USER_NAME ,
     password : process.env.PASSWORD,
     database :  process.env.DATABASE,
     max : process.env.MAX
