@@ -10,8 +10,7 @@ const auth = require('./app/middlewares/auth')
 
 //  app.use("/tmp" , express.static("tmp"))
 // app.use("/hairStyles" , express.static("hairStyles"))
-// app.use("/admin_profile_images" , express.static("admin_profile_images"))
-
+ app.use("/user_profile_images" , express.static("user_profile_images"))
 const cors = require("cors");
 
 app.use(cors({
