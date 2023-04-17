@@ -82,3 +82,11 @@ CREATE TABLE IF NOT EXISTS swipes(
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS posts(
+  posts_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
+  user_id INTEGER,
+  post_images TEXT [],
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);

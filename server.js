@@ -8,7 +8,7 @@ require('dotenv').config()
 const auth = require('./app/middlewares/auth')
 
 
-// app.use("/barber_profile_images" , express.static("barber_profile_images"))
+//  app.use("/tmp" , express.static("tmp"))
 // app.use("/hairStyles" , express.static("hairStyles"))
 // app.use("/admin_profile_images" , express.static("admin_profile_images"))
 
@@ -41,6 +41,7 @@ app.use("/terms_and_condtions" , require("./app/routes/Main/terms_and_conditions
 app.use("/privacy_policy" , require("./app/routes/Main/privacy_policyRoute"))
 app.use("/about_us" , require("./app/routes/Main/about_usRoute"))
 app.use("/swipes" , require("./app/routes/Swipes/swipeRoute"))
+app.use("/posts" , require("./app/routes/Main/postsRoute"))
 
 
 
