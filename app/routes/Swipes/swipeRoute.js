@@ -9,6 +9,10 @@ router.post("/swipe" , controller.swipe);
 router.get("/getAllMatches" , controller.getAllMatches);
 router.post("/rewindSwipe" , controller.rewindSwipe);
 router.get("/getAllSuperLikes" , controller.getAllSuperLikes);
+router.put("/boostProfile" , controller.boost);
+router.get("/getAllBoostedProfiles" , controller.getAllBoostedProfiles);
+
+
 
 
 
