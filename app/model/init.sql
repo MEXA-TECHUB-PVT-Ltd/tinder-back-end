@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS swipes(
   swipe_direction TEXT,
   user_id INTEGER ,
   swiped_user_id INTEGER,
+  liked BOOLEAN,
+  superLiked BOOLEAN,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
