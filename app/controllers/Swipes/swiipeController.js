@@ -1,5 +1,8 @@
 
 const { pool } = require("../../config/db.config");
+const { use } = require("../../routes/Swipes/swipeRoute");
+const schedule = require('node-schedule');
+
 
 
 exports.viewCards = async (req, res) => {
@@ -225,37 +228,37 @@ exports.rewindSwipe = async (req, res) => {
                 })
             )
         }
-        if(foundResult.rows[0]){
-            if(!foundResult.rows[0].swipe_id){
-                return(
+        if (foundResult.rows[0]) {
+            if (!foundResult.rows[0].swipe_id) {
+                return (
                     res.json({
-                        message : "swipe id not found for this record in db",
-                        status:false
+                        message: "swipe id not found for this record in db",
+                        status: false
                     })
                 )
             }
         }
 
         console.log(foundResult.rows[0])
-            let swipe_id = foundResult.rows[0].swipe_id;
-            if (swipe_id) {
-                const query = 'DELETE FROM swipes WHERE swipe_id = $1 RETURNING *';
-                const result = await pool.query(query, [swipe_id]);
+        let swipe_id = foundResult.rows[0].swipe_id;
+        if (swipe_id) {
+            const query = 'DELETE FROM swipes WHERE swipe_id = $1 RETURNING *';
+            const result = await pool.query(query, [swipe_id]);
 
-                if (result.rowCount > 0) {
-                    res.status(200).json({
-                        message: "Deletion successfull",
-                        status: true,
-                        deletedRecord: result.rows[0]
-                    })
-                }
-                else {
-                    res.status(404).json({
-                        message: "Could not delete . Record With this Id may not found or req.body may be empty",
-                        status: false,
-                    })
-                }
+            if (result.rowCount > 0) {
+                res.status(200).json({
+                    message: "Deletion successfull",
+                    status: true,
+                    deletedRecord: result.rows[0]
+                })
             }
+            else {
+                res.status(404).json({
+                    message: "Could not delete . Record With this Id may not found or req.body may be empty",
+                    status: false,
+                })
+            }
+        }
     }
     catch (err) {
         throw err;
@@ -277,23 +280,23 @@ exports.getAllSuperLikes = async (req, res) => {
         FROM swipes
         LEFT OUTER JOIN users ON swipes.swiped_user_id = users.user_id
         WHERE swipes.swiped_user_id = $1 AND swipes.superLiked = $2;`;
-        const foundResult = await pool.query(foundQuery, [user_id , true]);
+        const foundResult = await pool.query(foundQuery, [user_id, true]);
 
-        if(foundResult.rows){
+        if (foundResult.rows) {
             res.json({
                 message: "All users who have super liked you are here",
-                status : true,
-                result : foundResult.rows
+                status: true,
+                result: foundResult.rows
             })
         }
-        else{
+        else {
             res.json({
                 message: "Could not fetch",
-                status :false
+                status: false
             })
         }
 
-    
+
 
     }
     catch (err) {
@@ -303,6 +306,88 @@ exports.getAllSuperLikes = async (req, res) => {
     }
 }
 
+exports.boost = async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const user_id = req.query.user_id;
+        if (!user_id) {
+            return (res.json({
+                message: "user_id must be privided",
+                status: false
+            }))
+        }
+
+        const query = 'UPDATE users SET profile_boosted = $1 WHERE user_id = $2 RETURNING*';
+        const result = await pool.query(query, [true, user_id]);
+        console.log(result)
+
+        if (result.rows.length > 0) {
+            const job = schedule.scheduleJob(new Date(Date.now() + 30 * 60 * 1000), async function () {
+                const query = 'UPDATE users SET profile_boosted = $1 WHERE user_id = $2 RETURNING *';
+                const result = await pool.query(query, [false, user_id]);
+                console.log('Profile boosting time is over');
+            });
+
+            setTimeout(function () {
+                job.cancel();
+                console.log('Profile boosting time is over');
+            }, 30 * 60 * 1000);
+
+            if (result.rows.length > 0) {
+                res.json({
+                    message: "Profile is boosted successfully",
+                    status: true,
+                    result: result.rows[0]
+                })
+            }
+            else {
+                res.json({
+                    message: "Could not boost",
+                    status: false
+                })
+            }
+
+        }
+        else {
+            res.json({
+                message: "Could not boost",
+                status: false
+            })
+        }
+    }
+    catch (err) {
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+exports.getAllBoostedProfiles = async(req,res)=>{
+    const client = await pool.connect();
+
+    try{
+        const query= 'SELECT * FROM users WHERE profile_boosted = $1';
+        const result = await pool.query(query , [true]);
+
+        if(result.rows.length>0){
+            res.json({
+                message : "All current boosted profiles",
+                status : true,
+                result : result.rows
+            })
+        }else{
+            res.json({
+                message : "Not Found",
+                status : false,
+            })
+        }
+    }
+    catch (err) {
+        throw err;
+    } finally {
+        client.release();
+    }
+}
 
 async function checkForMatch(userId, swipedUserId, pool) {
     try {
@@ -384,6 +469,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
           AND acos(sin(radians($1)) * sin(radians(latitude)) 
             + cos(radians($1)) * cos(radians(latitude)) 
             * cos(radians($2) - radians(longitude))) * 6371 <= $5
+            ORDER BY profile_boosted DESC 
         OFFSET $6 LIMIT $7`;
         const values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit];
         const result = await pool.query(query, values);

@@ -38,12 +38,12 @@ exports.registerUser = async (req, res, next) => {
         }
 
 
-        const query = 'INSERT INTO users (email , password) VALUES ($1 , $2) RETURNING*'
+        const query = 'INSERT INTO users (email , password , profile_boosted) VALUES ($1 , $2 , $3) RETURNING*'
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
 
-        const result = await pool.query(query , [email , hashPassword]);
+        const result = await pool.query(query , [email , hashPassword , false]);
         console.log(result.rows[0])
 
         if(result.rows[0]){

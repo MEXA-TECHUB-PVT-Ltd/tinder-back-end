@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS users (
   longitude FLOAT ,
   latitude FLOAT ,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  profile_boosted BOOLEAN
 );
 
 CREATE TABLE IF NOT EXISTS otpStored(
@@ -74,6 +75,7 @@ CREATE TABLE IF NOT EXISTS about_us(
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
 CREATE TABLE IF NOT EXISTS swipes(
   swipe_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
   swipe_direction TEXT,
