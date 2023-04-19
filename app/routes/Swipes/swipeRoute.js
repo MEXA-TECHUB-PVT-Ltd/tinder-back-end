@@ -12,11 +12,4 @@ router.get("/getAllSuperLikes" , controller.getAllSuperLikes);
 router.put("/boostProfile" , controller.boost);
 router.get("/getAllBoostedProfiles" , controller.getAllBoostedProfiles);
 
-
-
-
-
-
-
-
 module.exports = router;
