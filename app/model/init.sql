@@ -94,3 +94,36 @@ CREATE TABLE IF NOT EXISTS posts(
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS chatRoom(
+  chat_room_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
+  user_1_id INTEGER,
+  user_2_id INTEGER,
+  blockStatus BOOLEAN DEFAULT false,
+  blocked_by_id  BOOLEAN DEFAULT false,
+  deletedForUser1 BOOLEAN DEFAULT false,
+  deletedForUser2  BOOLEAN DEFAULT false,
+  pinnedByUser1  BOOLEAN DEFAULT false,
+  pinnedByUser2  BOOLEAN DEFAULT false,
+  archiveByUser1  BOOLEAN DEFAULT false ,
+  archiveByUser2  BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS messages(
+  message_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
+  chat_room_id  INTEGER,
+  message_type  TEXT ,
+  message  TEXT ,
+  sender_id  INTEGER,
+  receiver_id  INTEGER , 
+  deletedForSender  BOOLEAN DEFAULT false,
+  deletedForReceiver  BOOLEAN DEFAULT false,
+  delivered  BOOLEAN DEFAULT false ,
+  read  BOOLEAN DEFAULT false ,
+  media_type  TEXT ,
+  reply_on_message_id  INTEGER ,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
