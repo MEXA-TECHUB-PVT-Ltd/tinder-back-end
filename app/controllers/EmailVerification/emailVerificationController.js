@@ -33,7 +33,7 @@ exports.sendEmail = async (req, res) => {
             const foundResult = await pool.query(found_email_query, [email])
 
             if (foundResult) {
-                sendOTPVerificationEmail(foundEmail.rows[0].email, res)
+                sendOTPVerificationEmail(foundResult.rows[0].email, res)
             }
             else {
                     res.json({

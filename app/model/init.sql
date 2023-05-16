@@ -127,3 +127,36 @@ CREATE TABLE IF NOT EXISTS messages(
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+
+CREATE TABLE IF NOT EXISTS school(
+  school_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
+  name TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+
+CREATE TABLE IF NOT EXISTS relation_type(
+  relation_type_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
+  type TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS categories(
+  category_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  category_name  TEXT ,
+  trash BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS interests(
+  interest_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  interest_name  TEXT ,
+  trash BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
