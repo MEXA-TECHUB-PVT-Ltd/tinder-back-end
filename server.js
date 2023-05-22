@@ -32,9 +32,12 @@ app.use(cors({
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH']
 }));
 
+app.get("/" , (req,res)=>{
+  res.json("Server is running this is Home Route(/)")
+})
 
 
-// app.use("/admin", require("./app/routes/Users/adminRouts"))
+ app.use("/admin", require("./app/routes/Users/adminRoutes"))
 app.use("/user", require("./app/routes/Users/userRoute"))
 app.use("/emailVerification", require("./app/routes/EmailVerification/EmailVerificationRoute"))
 app.use("/terms_and_condtions" , require("./app/routes/Main/terms_and_conditionsRoute"))
@@ -44,12 +47,21 @@ app.use("/swipes" , require("./app/routes/Swipes/swipeRoute"))
 app.use("/posts" , require("./app/routes/Main/postsRoute"))
 app.use('/messages', require("./app/routes/Chat/messageRoute"));
 app.use('/chat_rooms', require("./app/routes/Chat/chatRoute"));
+app.use('/school', require("./app/routes/Main/schoolRoute"));
+app.use('/relation_type', require("./app/routes/Main/relation_typeRoute"));
+app.use('/category', require("./app/routes/Main/categoryRoute"));
+app.use('/interest', require("./app/routes/Main/interestRoute"));
+app.use('/preference_type', require("./app/routes/Main/preference_typeRoute"));
+app.use('/preference', require("./app/routes/Main/preferenceRoute"));
+app.use('/reports', require("./app/routes/Main/report_user_route"));
 
 
 
 
 
- app.use(auth)
+
+
+//  app.use(auth)
  app.use("/imageUpload", require("./app/routes/ImageUpload/imageUploadRoute"))
 
 
@@ -94,7 +106,6 @@ socket.on("disconnect", () => {
 
 
 socket.on("message", async (data) => {
-
   console.log(data)
   let media_type = data.media_type;
   let message_type = data.message_type;

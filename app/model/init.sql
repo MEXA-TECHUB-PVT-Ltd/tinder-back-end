@@ -51,7 +51,6 @@ CREATE TABLE IF NOT EXISTS admins(
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-
 CREATE TABLE IF NOT EXISTS terms_and_condtions(
   terms_and_condition_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
   TEXT TEXT,
@@ -124,6 +123,64 @@ CREATE TABLE IF NOT EXISTS messages(
   read  BOOLEAN DEFAULT false ,
   media_type  TEXT ,
   reply_on_message_id  INTEGER ,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS school(
+  school_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
+  name TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS relation_type(
+  relation_type_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
+  type TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS categories(
+  category_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  category_name  TEXT ,
+  trash BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS interests(
+  interest_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  interest_name  TEXT ,
+  trash BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS preference_types(
+  preference_type_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  preference_type  TEXT ,
+  trash BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS preferences(
+  preference_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  preference_type_id INTEGER,
+  preference  TEXT ,
+  trash BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+
+CREATE TABLE IF NOT EXISTS reported_users_records(
+  reported_users_record_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  user_id INTEGER,
+  reported_by INTEGER ,
+  report_reason TEXT,
+  trash BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );

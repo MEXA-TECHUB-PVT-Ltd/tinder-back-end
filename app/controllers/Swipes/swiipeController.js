@@ -72,29 +72,46 @@ exports.swipe = async (req, res) => {
         let result;
         let match_found;
 
-        if (!user_id || !swipe_direction || !swiped_user_id || !likeType) {
-            return (res.json({ message: "user_id , swiped_user_id , likeType and swipe_direction must be provided", status: false }))
+        if (!user_id || !swipe_direction || !swiped_user_id) {
+            return (res.json({ message: "user_id , swiped_user_id and swipe_direction must be provided", status: false }))
         }
 
-        if (likeType == 'like' || likeType == 'superLike') { } else { return (res.json({ message: "like type must be only 'like' OR 'superLike'", status: false })) }
+        if(swipe_direction == 'right'){
+            if(!likeType){
+                return(
+                    res.json({
+                        message: "like type must be required if swipe_direction is right",
+                        status : false
+                    })
+                )
+            }
+            if (likeType == 'like' || likeType == 'superLike') { } else { return (res.json({ message: "like type must be only 'like' OR 'superLike'", status: false })) }
+
+           
+        }
         if (swipe_direction == 'left' || swipe_direction == 'right') { } else { return (res.json({ message: "swipe direction must be left or right", status: false })) }
 
         if (likeType == 'like') {
             liked = true;
             superLiked = false
         }
-        else {
+        else if(likeType == 'superLike'){
             superLiked = true
             liked = true
+        }
+        else if(!likeType){
+            liked = false,
+            superLiked = false
         }
         const checkAlreadySwipeQuery = 'SELECT * FROM swipes WHERE user_id = $1 AND swiped_user_id = $2';
         const checkResult = await pool.query(checkAlreadySwipeQuery, [user_id, swiped_user_id]);
 
 
         if (checkResult.rowCount > 0) {
+            console.log("in update")
             // already swiped by this user , no matter left or right
-            let updateQuery = 'UPDATE swipes SET user_id = $1  , swipe_direction= $2 ,swiped_user_id = $3  RETURNING*';
-            result = await pool.query(updateQuery, [user_id, swipe_direction, swiped_user_id]);
+            let updateQuery = 'UPDATE swipes SET user_id = $1  , swipe_direction= $2 ,swiped_user_id = $3 ,liked = $4, superLiked= $5 WHERE user_id = $6 AND swiped_user_id = $7 RETURNING*';
+            result = await pool.query(updateQuery, [user_id, swipe_direction, swiped_user_id ,liked , superLiked , user_id , swiped_user_id]);
             if (result.rows[0]) {
                 result = result.rows[0]
             }
@@ -148,7 +165,6 @@ exports.swipe = async (req, res) => {
 exports.getAllMatches = async (req, res) => {
     try {
         const user_id = req.query.user_id;
-
         if (!user_id) {
             return (
                 res.json({
@@ -284,7 +300,7 @@ exports.getAllSuperLikes = async (req, res) => {
 
         if (foundResult.rows) {
             res.json({
-                message: "All users who have super liked you are here",
+                message: "All users who have super liked you, are here",
                 status: true,
                 result: foundResult.rows
             })
@@ -298,6 +314,179 @@ exports.getAllSuperLikes = async (req, res) => {
 
 
 
+    }
+    catch (err) {
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+exports.getAllSuperLikedUsers = async (req, res) => {
+    const client = await pool.connect();
+    try {
+  
+        const foundQuery = `SELECT  u.user_id , u.email, u.password,
+        json_agg(json_build_object(
+            'swipe_direction', s.swipe_direction,
+            'user_id', s.user_id,
+            'liked', s.liked,
+            'superLiked', s.superLiked,
+            'created_at', s.created_at,
+            'updated_at', s.updated_at
+        )) AS super_liked_by
+        FROM swipes s
+        JOIN users u ON s.swiped_user_id = u.user_id
+        WHERE s.superLiked = TRUE
+        GROUP BY u.user_id,u.email, u.password
+ 
+        `;
+        const foundResult = await pool.query(foundQuery);
+
+        if (foundResult.rows) {
+            res.json({
+                message: "All users with the users who super liked them",
+                status: true,
+                result: foundResult.rows
+            })
+        }
+        else {
+            res.json({
+                message: "Could not fetch",
+                status: false
+            })
+        }
+
+
+
+    }
+    catch (err) {
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+exports.getRightSwipesOfUser = async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const user_id = req.query.user_id;
+
+        if (!user_id) {
+            return (res.json({ message: "user_id  must be provided", status: false }))
+        }
+
+        const foundQuery = `
+        SELECT
+            wtr.swipe_id,
+            wtr.swipe_direction,
+            wtr.user_id,
+            wtr.swiped_user_id,
+            wtr.liked,
+            wtr.superLiked,
+            json_build_object(
+                'user_id', wt.user_id,
+                'first_name', wt.first_name,
+                'last_name', wt.last_name,
+                'created_at', wt.created_at,
+                'updated_at', wt.updated_at
+            ) AS user_details,
+            json_build_object(
+                'user_id', wtu.user_id,
+                'first_name', wtu.first_name,
+                'last_name', wtu.last_name,
+                'created_at', wtu.created_at,
+                'updated_at', wtu.updated_at
+            ) AS swiped_user_details
+        FROM
+            swipes wtr
+            JOIN users wt ON wtr.user_id = wt.user_id
+            JOIN users wtu ON wtr.swiped_user_id = wtu.user_id
+        WHERE
+            wtr.user_id = $1 AND wtr.swipe_direction = $2;
+    `;
+    
+
+        const foundResult = await pool.query(foundQuery, [user_id , "right"]);
+
+
+        if (foundResult.rows) {
+            res.json({
+                message: "All users swiped by this user",
+                status: true,
+                result: foundResult.rows
+            })
+        }
+        else {
+            res.json({
+                message: "Could not fetch",
+                status: false
+            })
+        }
+    }
+    catch (err) {
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+exports.getLeftSwipesOfUser = async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const user_id = req.query.user_id;
+
+        if (!user_id) {
+            return (res.json({ message: "user_id  must be provided", status: false }))
+        }
+
+        const foundQuery = `
+        SELECT
+            wtr.swipe_id,
+            wtr.swipe_direction,
+            wtr.user_id,
+            wtr.swiped_user_id,
+            wtr.liked,
+            wtr.superLiked,
+            json_build_object(
+                'user_id', wt.user_id,
+                'first_name', wt.first_name,
+                'last_name', wt.last_name,
+                'created_at', wt.created_at,
+                'updated_at', wt.updated_at
+            ) AS user_details,
+            json_build_object(
+                'user_id', wtu.user_id,
+                'first_name', wtu.first_name,
+                'last_name', wtu.last_name,
+                'created_at', wtu.created_at,
+                'updated_at', wtu.updated_at
+            ) AS swiped_user_details
+        FROM
+            swipes wtr
+            JOIN users wt ON wtr.user_id = wt.user_id
+            JOIN users wtu ON wtr.swiped_user_id = wtu.user_id
+        WHERE
+            wtr.user_id = $1 AND wtr.swipe_direction = $2;
+    `;
+    
+
+        const foundResult = await pool.query(foundQuery, [user_id , "left"]);
+
+
+        if (foundResult.rows) {
+            res.json({
+                message: "All users swiped by this user",
+                status: true,
+                result: foundResult.rows
+            })
+        }
+        else {
+            res.json({
+                message: "Could not fetch",
+                status: false
+            })
+        }
     }
     catch (err) {
         throw err;

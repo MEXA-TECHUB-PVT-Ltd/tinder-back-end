@@ -328,6 +328,54 @@ exports.viewProfile = async(req,res)=>{
         })
     }
 }
+exports.getAllUsers = async (req, res) => {
+    const client = await pool.connect();
+    try {
+        let limit = req.query.limit;
+        let page = req.query.page
+
+        let result;
+
+        if (!page || !limit) {
+            const query = 'SELECT * FROM users'
+           result = await pool.query(query);
+        }
+
+        if(page && limit){
+            limit = parseInt(limit);
+            let offset= (parseInt(page)-1)* limit;
+
+            const query = 'SELECT * FROM users LIMIT $1 OFFSET $2'
+            result = await pool.query(query , [limit , offset]);
+        }   
+      
+        if (result.rows) {
+            res.json({
+                message: "Fetched",
+                status: true,
+                users_counts: result.rows.length,
+                result: result.rows
+            })
+        }
+        else {
+            res.json({
+                message: "could not fetch",
+                status: false
+            })
+        }
+    }
+    catch (err) {
+        res.json({
+            message: "Error",
+            status: false,
+            error: err.message
+        })
+    }
+    finally {
+        client.release();
+      }
+
+}
 
 const registerSchema = Joi.object({
     email: Joi.string().min(6).required().email(),
