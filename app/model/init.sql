@@ -174,12 +174,21 @@ CREATE TABLE IF NOT EXISTS preferences(
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-
 CREATE TABLE IF NOT EXISTS reported_users_records(
   reported_users_record_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
   user_id INTEGER,
   reported_by INTEGER ,
   report_reason TEXT,
+  trash BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS contacts(
+  contact_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  user_id INTEGER,
+  contact_name INTEGER ,
+  phone_number TEXT,
   trash BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

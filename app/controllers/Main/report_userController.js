@@ -144,21 +144,22 @@ exports.get_a_reported_user= async (req, res) => {
         )) AS reported_users_records
         FROM reported_users_records rus
         JOIN users u ON rus.user_id = u.user_id
-        GROUP BY u.user_id,u.email, u.password
         WHERE rus.user_id = $1
-        `;
+        GROUP BY u.user_id,u.email, u.password
+         `;
+
         const result = await pool.query(foundQuery ,[user_id]);
 
         if (result.rows[0]) {
             res.status(201).json({
-                message: "Fetched a use who is reported.",
+                message: "Fetched a user who is reported.",
                 status: true,
                 result: result.rows[0]
             })
         }
         else {
             res.status(400).json({
-                message: "Could not Fetch",
+                message: "Could not fetch if this user is reported.",
                 status: false
             })
         }
