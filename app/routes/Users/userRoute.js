@@ -8,6 +8,8 @@ router.post("/register_user" , controller.registerUser);
 router.post("/login" , controller.login);
 router.put("/updateProfile" , controller.updateProfile);
 router.put("/updatePassword" , controller.updatePassword)
+router.get("/getAllUsers"  , controller.getAllUsers)
+
 
 
 

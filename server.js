@@ -51,11 +51,17 @@ app.use('/school', require("./app/routes/Main/schoolRoute"));
 app.use('/relation_type', require("./app/routes/Main/relation_typeRoute"));
 app.use('/category', require("./app/routes/Main/categoryRoute"));
 app.use('/interest', require("./app/routes/Main/interestRoute"));
+app.use('/preference_type', require("./app/routes/Main/preference_typeRoute"));
+app.use('/preference', require("./app/routes/Main/preferenceRoute"));
+app.use('/reports', require("./app/routes/Main/report_user_route"));
 
 
 
 
- app.use(auth)
+
+
+
+//  app.use(auth)
  app.use("/imageUpload", require("./app/routes/ImageUpload/imageUploadRoute"))
 
 
