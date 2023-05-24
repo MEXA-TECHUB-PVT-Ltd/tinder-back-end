@@ -6,7 +6,72 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 
 
-exports.registerUser = async (req, res, next) => {
+exports.registerWithPh= async (req, res, next) => {
+    const client = await pool.connect();
+    try {
+        const phone_number = req.body.phone_number;
+        const password = req.body.password;
+       
+        if(!phone_number || !password){
+            return(
+                res.json({
+                    message: "phone number and pasword must be provided",
+                    status : false
+                })
+            )
+        }
+        
+
+        const found_ph_query = 'SELECT * FROM users WHERE phone_number = $1'
+        const ph_no_Exists = await pool.query(found_ph_query , [phone_number])
+        
+
+
+        if (ph_no_Exists.rowCount>0) {
+            return (
+                res.status(400).json({
+                    message: "user with this phone_number already exists",
+                    status: false
+                })
+            )
+        }
+
+
+        const query = 'INSERT INTO users (phone_number , password , profile_boosted , login_type) VALUES ($1 , $2 , $3 , $4) RETURNING*'
+        const salt = await bcrypt.genSalt(10);
+        const hashPassword = await bcrypt.hash(req.body.password, salt);
+
+        const result = await pool.query(query , [phone_number , hashPassword , false , 'phone_number']);
+        console.log(result.rows[0])
+
+        if(result.rows[0]){
+            res.json({
+                message: "User Has been registered with phone number successfully",
+                status : true,
+                result:result.rows[0]
+            })
+        }
+        else{
+            res.json({
+                message: "Could not Register user",
+                status :false,
+            })
+        }
+
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }finally {
+        client.release();
+      }
+}
+
+exports.registerWithEmail= async (req, res, next) => {
     const client = await pool.connect();
     try {
         const email = req.body.email;
@@ -38,17 +103,17 @@ exports.registerUser = async (req, res, next) => {
         }
 
 
-        const query = 'INSERT INTO users (email , password , profile_boosted) VALUES ($1 , $2 , $3) RETURNING*'
+        const query = 'INSERT INTO users (email , password , profile_boosted , login_type) VALUES ($1 , $2 , $3 , $4) RETURNING*'
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
 
-        const result = await pool.query(query , [email , hashPassword , false]);
+        const result = await pool.query(query , [email , hashPassword , false , 'email']);
         console.log(result.rows[0])
 
         if(result.rows[0]){
             res.json({
-                message: "User Has been registered successfully",
+                message: "User Has been registered with email successfully",
                 status : true,
                 result:result.rows[0]
             })
@@ -74,7 +139,7 @@ exports.registerUser = async (req, res, next) => {
 
 }
 
-exports.login = async (req, res) => {
+exports.login_with_email = async (req, res) => {
     try {
         const email = req.body.email;
         let password = req.body.password;
@@ -134,6 +199,64 @@ exports.login = async (req, res) => {
     }
 }
 
+exports.login_with_ph = async (req, res) => {
+    try {
+        const phone_number = req.body.phone_number;
+        let password = req.body.password;
+
+  
+        if (!phone_number || !password) {
+            return (
+                res.status(400).json({
+                    message: "phone_number and password must be provided",
+                    status: false
+                })
+            )
+        }
+
+        const query = 'SELECT * FROM users WHERE phone_number = $1';
+        const foundResult = await pool.query(query  , [phone_number]);
+
+        console.log(foundResult)
+
+        if (foundResult.rowCount == 0) {
+            return (
+                res.status(400).json({
+                    message: "Wrong phone_number or password",
+                    status: false
+                })
+            )
+        }
+
+        const vaildPass = await bcrypt.compare(password, foundResult.rows[0].password);
+
+        if (!vaildPass) {
+            return (
+                res.status(401).json({
+                    message: "Wrong phone_number or password",
+                    status: false
+                })
+            )
+        }
+
+        const token = jwt.sign({ id: foundResult.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
+        res.json({
+            message: "Logged in Successfully",
+            status: true,
+            result: foundResult.rows[0],
+            jwt_token: token
+        });
+
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }
+}
 
 exports.updateProfile= async (req,res)=>{
     try{
@@ -143,29 +266,37 @@ exports.updateProfile= async (req,res)=>{
             return(res.json({message : "Please provide user_id" , status : false}))
          }
 
-        const first_name= req.body.first_name;
-        const last_name = req.body.last_name ;
-        const profession = req.body.profession ;
-        const interests = req.body.interests ;
-        const appreciation_text = req.body.appreciation_text;
-        const height = req.body.height;
-        const profile_picture = req.body.profile_picture;
+        const name= req.body.name;
+        const email = req.body.email ;
+        const phone_number = req.body.phone_number ;
+        const password = req.body.password ;
+        const dob = req.body.dob;
+        const relation_type = req.body.relation_type;
+        const school = req.body.school;
+        const interest = req.body.interest ;
+        const job_title = req.body.job_title;
+        const company = req.body.company;
+        const category_id = req.body.category_id;
+        const active_status = req.body.active_status ;
         const gender = req.body.gender ;
-        const date_of_birth = req.body.date_of_birth;
-        const country = req.body.country;
-        const city = req.body.city ;
-        const state = req.body.state ;
-        const education = req.body.education ;
-        const academic_qualifications = req.body.academic_qualifications
-        const graduated_university = req.body.graduated_university ;
-        const smoke_status = req.body.smoke_status ;
-        const drink_status = req.body.drink_status ;
-        const constellation_id = req.body.constellation_id;
-        const annual_income = req.body.annual_income;
-        const children = req.body.children ;
-        const bio = req.body.bio ;
+        const images = req.body.images;
+        const preference = req.body.preference;
+        const insta_id = req.body.insta_id;
+        const spotify_id = req.body.spotify_id;
+
         let longitude = req.body.longitude;
         let latitude = req.body.latitude;
+
+
+
+        if(images.length >6 || images.length < 2){
+            return(
+                res.json({
+                    message: "Images can not be greater than 6 or less than 2 ",
+                    status : false,
+                })
+            )
+        }
 
 
         //filtering and modifying
@@ -180,61 +311,128 @@ exports.updateProfile= async (req,res)=>{
             })
         }}
 
-        
 
-        const query = `UPDATE users SET
-        first_name = $1,
-        last_name = $2,
-        profession = $3,
-        interests = $4,
-        appreciation_text = $5,
-        height = $6,
-        profile_picture = $7,
-        gender = $8,
-        date_of_birth = $9,
-        country = $10,
-        city = $11,
-        state = $12,
-        education = $13,
-        academic_qualifications = $14,
-        graduated_university = $15,
-        smoke_status = $16,
-        drink_status = $17,
-        constellation_id = $18,
-        annual_income = $19,
-        children = $20,
-        bio = $21,
-        longitude = $22,
-        latitude = $23
-        WHERE user_id = $24 RETURNING *;
-    `;
+    let query = 'UPDATE users SET ';
+    let index = 2;
+    let values =[user_id];
 
-    const values = [
-        first_name || null,
-        last_name || null,
-        profession || null,
-        interests || null,
-        appreciation_text || null,
-        height || null,
-        profile_picture || null,
-        gender || null,
-        date_of_birth || null,
-        country || null,
-        city || null,
-        state || null,
-        education || null,
-        academic_qualifications || null,
-        graduated_university || null,
-        smoke_status || null,
-        drink_status || null,
-        constellation_id || null,
-        annual_income || null,
-        children || null,
-        bio || null,
-        longitude || null,
-        latitude || null,
-        user_id
-      ];
+    if(name){
+        query+= `name = $${index} , `;
+        values.push(name)
+        index ++
+    }
+    if(email){
+        query+= `email = $${index} , `;
+        values.push(email)
+        index ++
+    }
+    if(phone_number){
+        query+= `phone_number = $${index} , `;
+        values.push(phone_number)
+        index ++
+    }
+
+
+    if(password){
+        query+= `password = $${index} , `;
+        values.push(password)
+        index ++
+    }
+    if(dob){
+        query+= `dob = $${index} , `;
+        values.push(dob)
+        index ++
+    }
+
+    if(relation_type){
+        query+= `relation_type = $${index} , `;
+        values.push(relation_type)
+        index ++
+    }
+
+    if(school){
+        query+= `school = $${index} , `;
+        values.push(school)
+        index ++
+    }
+
+
+    if(interest){
+        query+= `interest = $${index} , `;
+        values.push(interest)
+        index ++
+    }
+
+
+    if(job_title){
+        query+= `job_title = $${index} , `;
+        values.push(job_title)
+        index ++
+    }
+
+    if(company){
+        query+= `company = $${index} , `;
+        values.push(company)
+        index ++
+    }
+
+    if(category_id){
+        query+= `category_id = $${index} , `;
+        values.push(category_id)
+        index ++
+    }
+
+    if(active_status){
+        query+= `active_status = $${index} , `;
+        values.push(active_status)
+        index ++
+    }
+
+
+    if(gender){
+        query+= `gender = $${index} , `;
+        values.push(gender)
+        index ++
+    }
+
+    if(images){
+        query+= `images = $${index} , `;
+        values.push(images)
+        index ++
+    }
+    if(preference){
+        query+= `preference = $${index} , `;
+        values.push(preference)
+        index ++
+    }
+    if(insta_id){
+        query+= `insta_id = $${index} , `;
+        values.push(insta_id)
+        index ++
+    }
+    if(spotify_id){
+        query+= `spotify_id = $${index} , `;
+        values.push(spotify_id)
+        index ++
+    }
+
+    if(longitude){
+        query+= `longitude = $${index} , `;
+        values.push(longitude)
+        index ++
+    }
+
+    if(latitude){
+        query+= `latitude = $${index} , `;
+        values.push(latitude)
+        index ++
+    }
+
+
+    query += 'WHERE user_id = $1 RETURNING*'
+    query = query.replace(/,\s+WHERE/g, " WHERE");
+    console.log(query);
+
       
 
       const result = await pool.query(query , values);
@@ -267,20 +465,56 @@ exports.updateProfile= async (req,res)=>{
 exports.updatePassword = async(req,res)=>{
     try{
         const email = req.body.email ;
+        const phone_number = req.body.phone_number;
         const password = req.body.password;
 
-        const query = 'UPDATE users SET password = $1 WHERE email = $2 RETURNING*';
-        const salt = await bcrypt.genSalt(10);
-        const hashPassword = await bcrypt.hash(password, salt);
-
-        const result = await pool.query(query , [hashPassword , email]);
-
-        if(result.rows[0]){
-            res.json({message: "Update successfully" , status :true , result : result.rows[0]})
+        if(email && phone_number){
+            return(res.json({
+                message : "only one can be provided email or phone_number",
+                status :false
+            }))
         }
-        else{
-            res.json({message: "Could not Update" , status : false })
+
+        if(email){
+            const foundQuery = 'SELECT * FROM users WHERE email = $1 and login_type = $2';
+            const foundResult = await pool.query(foundQuery , [email , 'email']);
+
+        if(foundResult.rows[0]){
+            const query = 'UPDATE users SET password = $1 WHERE email = $2 RETURNING*';
+            const salt = await bcrypt.genSalt(10);
+            const hashPassword = await bcrypt.hash(password, salt);
+    
+            const result = await pool.query(query , [hashPassword , email]);
+    
+            if(result.rows[0]){
+                res.json({message: "Update successfully" , status :true , result : result.rows[0]})
+            }
+            else{
+                res.json({message: "Could not Update" , status : false })
+            }
         }
+        }
+        if(phone_number){
+            const foundQuery = 'SELECT * FROM users WHERE phone_number = $1 and login_type = $2';
+            const foundResult = await pool.query(foundQuery , [email , 'phone_number']);
+
+
+            if(foundResult.rows[0]){
+                const query = 'UPDATE users SET password = $1 WHERE phone_number = $2 RETURNING*';
+                const salt = await bcrypt.genSalt(10);
+                const hashPassword = await bcrypt.hash(password, salt);
+                const result = await pool.query(query , [hashPassword , email]);
+        
+                if(result.rows[0]){
+                    res.json({message: "Update successfully" , status :true , result : result.rows[0]})
+                }
+                else{
+                    res.json({message: "Could not Update" , status : false })
+                }
+            }
+        }
+
+       
     }
     catch (err) {
         console.log(err)
@@ -328,6 +562,7 @@ exports.viewProfile = async(req,res)=>{
         })
     }
 }
+
 exports.getAllUsers = async (req, res) => {
     const client = await pool.connect();
     try {
@@ -376,6 +611,159 @@ exports.getAllUsers = async (req, res) => {
       }
 
 }
+
+exports.usersByPreference = async(req,res)=>{
+    try{
+        const preference_id = req.query.preference_id;
+        if(!preference_id){
+            return(res.json({message : "Please provide preference_id" , status : false}))
+         }
+         let limit = req.query.limit;
+         let page = req.query.page
+ 
+         let result;
+ 
+         if (!page || !limit) {
+             const query = 'SELECT * FROM users WHERE preference = $1'
+            result = await pool.query(query , [preference_id]);
+         }
+ 
+         if(page && limit){
+             limit = parseInt(limit);
+             let offset= (parseInt(page)-1)* limit;
+ 
+             const query = 'SELECT * FROM users WHERE preference = $3 LIMIT $1 OFFSET $2'
+             result = await pool.query(query , [limit , offset , preference_id]);
+         }   
+       
+         if (result.rows) {
+             res.json({
+                 message: "Fetched",
+                 status: true,
+                 users_counts: result.rows.length,
+                 result: result.rows
+             })
+         }
+         else {
+             res.json({
+                 message: "could not fetch",
+                 status: false
+             })
+         }
+        
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }
+}
+
+exports.usersByCategory = async(req,res)=>{
+    try{
+        const category_id = req.query.category_id;
+        if(!category_id){
+            return(res.json({message : "Please provide category_id" , status : false}))
+         }
+
+         let limit = req.query.limit;
+         let page = req.query.page
+ 
+         let result;
+ 
+         if (!page || !limit) {
+             const query = 'SELECT * FROM users WHERE category_id = $1'
+            result = await pool.query(query , [category_id]);
+         }
+ 
+         if(page && limit){
+             limit = parseInt(limit);
+             let offset= (parseInt(page)-1)* limit;
+ 
+             const query = 'SELECT * FROM users WHERE category_id = $3 LIMIT $1 OFFSET $2'
+             result = await pool.query(query , [limit , offset , category_id]);
+         }   
+       
+         if (result.rows) {
+             res.json({
+                 message: "Fetched",
+                 status: true,
+                 users_counts: result.rows.length,
+                 result: result.rows
+             })
+         }
+         else {
+             res.json({
+                 message: "could not fetch",
+                 status: false
+             })
+         }
+        
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }
+}
+
+exports.usersByInterest = async(req,res)=>{
+    try{
+        const interest = req.query.interest;
+        if(!interest){
+            return(res.json({message : "Please provide interest" , status : false}))
+         }
+
+         let limit = req.query.limit;
+         let page = req.query.page
+ 
+         let result;
+ 
+         if (!page || !limit) {
+             const query = 'SELECT * FROM users WHERE interest = $1'
+            result = await pool.query(query , [interest]);
+         }
+ 
+         if(page && limit){
+             limit = parseInt(limit);
+             let offset= (parseInt(page)-1)* limit;
+ 
+             const query = 'SELECT * FROM users WHERE interest = $3 LIMIT $1 OFFSET $2'
+             result = await pool.query(query , [limit , offset , interest]);
+         }   
+       
+         if (result.rows) {
+             res.json({
+                 message: "Fetched",
+                 status: true,
+                 users_counts: result.rows.length,
+                 result: result.rows
+             })
+         }
+         else {
+             res.json({
+                 message: "could not fetch",
+                 status: false
+             })
+         }
+        
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }
+}
+
 
 const registerSchema = Joi.object({
     email: Joi.string().min(6).required().email(),
