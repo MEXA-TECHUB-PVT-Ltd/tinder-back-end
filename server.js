@@ -55,6 +55,8 @@ app.use('/preference_type', require("./app/routes/Main/preference_typeRoute"));
 app.use('/preference', require("./app/routes/Main/preferenceRoute"));
 app.use('/reports', require("./app/routes/Main/report_user_route"));
 app.use('/contacts', require("./app/routes/Main/contactRoute"));
+app.use('/notification', require("./app/routes/Main/notificationsRoute"));
+
 
 
 

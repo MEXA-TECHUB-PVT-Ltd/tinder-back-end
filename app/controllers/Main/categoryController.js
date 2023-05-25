@@ -7,11 +7,13 @@ exports.addCategory = async (req, res) => {
     const client = await pool.connect();
     try {
         const category_name = req.body.category_name;
+        const image = req.body.image;
 
-        const query = 'INSERT INTO categories (category_name) VALUES ($1) RETURNING*'
+        const query = 'INSERT INTO categories (category_name , image) VALUES ($1 , $2) RETURNING*'
         const result = await pool.query(query , 
             [
                 category_name ? category_name : null,
+                image ? image : null
               
             ]);
 
@@ -48,6 +50,7 @@ exports.updateCategory = async (req, res) => {
     try {
         const category_id = req.body.category_id;
         const category_name = req.body.category_name;
+        const image = req.body.image;
 
 
 
@@ -70,6 +73,11 @@ exports.updateCategory = async (req, res) => {
         if(category_name){
             query+= `category_name = $${index} , `;
             values.push(category_name)
+            index ++
+        }
+        if(image){
+            query+= `image = $${index} , `;
+            values.push(image)
             index ++
         }
       

@@ -22,6 +22,24 @@ exports.viewCards = async (req, res) => {
             )
         }
 
+        const gender = req.body.gender;
+        const start_age = req.query.start_age;
+        const end_age = req.query.end_age;
+
+        if(start_age || end_age){
+            if(start_age && end_age){
+            }
+            else{
+                return(
+                    res.json({
+                        message: "start_age and end_age must be provided if you want to apply age filter , otherwise dont provide any of them",
+                        status: false
+                    })
+                )
+            }
+        }
+        
+
         user_id = parseInt(user_id)
         latitude = parseFloat(latitude);
         longitude = parseFloat(longitude);
@@ -34,7 +52,7 @@ exports.viewCards = async (req, res) => {
         let offset = (page - 1) * limit;
 
         const excludeProfileIds = await getSwipedProfileIds(user_id, 'right');
-        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius);
+        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds,limit, offset, radius , start_age , end_age , gender);
         console.log(excludeProfileIds)
         if (potentialMatches) {
             res.json({
@@ -645,22 +663,34 @@ async function getSwipedProfileIds(userId, direction) {
 
 }
 
-async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance) {
+async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance , start_age , end_age , gender , common_interest ) {
     try {
-        const query = `
-        SELECT *, 
-          acos(sin(radians($1)) * sin(radians(latitude)) 
-            + cos(radians($1)) * cos(radians(latitude)) 
-            * cos(radians($2) - radians(longitude))) * 6371 as distance
-        FROM users
-        WHERE user_id <> $3 
-          AND user_id <> ALL($4) 
-          AND acos(sin(radians($1)) * sin(radians(latitude)) 
-            + cos(radians($1)) * cos(radians(latitude)) 
-            * cos(radians($2) - radians(longitude))) * 6371 <= $5
-            ORDER BY profile_boosted DESC 
-        OFFSET $6 LIMIT $7`;
-        const values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit];
+
+        console.log(typeof(latitude))
+        let query ;
+        query = `
+        SELECT *,
+    acos(sin(radians($1)) * sin(radians(latitude))
+        + cos(radians($1)) * cos(radians(latitude))
+        * cos(radians($2) - radians(longitude))) * 6371 AS distance
+FROM users
+WHERE user_id <> $3
+    AND user_id <> ALL($4)
+    AND (
+        (($5 IS NULL) OR (EXTRACT(YEAR FROM age(CURRENT_DATE, to_date(users.dob , 'YYYY-MM-DD')))) >= $5) -- Check minimum age if provided
+        AND (($6 IS NULL) OR (EXTRACT(YEAR FROM age(CURRENT_DATE, to_date(users.dob , 'YYYY-MM-DD')))) <= $6) -- Check maximum age if provided
+        AND ($7 IS NULL OR gender = $7) -- Check gender if provided
+        -- Add more conditions for additional filters
+    )
+    AND acos(sin(radians($1)) * sin(radians(latitude))
+        + cos(radians($1)) * cos(radians(latitude))
+        * cos(radians($2) - radians(longitude))) * 6371 <= $8
+ORDER BY profile_boosted DESC
+OFFSET $9 LIMIT $10;
+
+`; 
+
+        const values = [latitude, longitude, userId, excludeProfileIds,  start_age , end_age , gender ,maxDistance, offset, limit];
         const result = await pool.query(query, values);
         return result.rows;
     }
