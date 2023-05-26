@@ -22,15 +22,16 @@ exports.viewCards = async (req, res) => {
             )
         }
 
-        const gender = req.body.gender;
+        const gender = req.query.gender;
         const start_age = req.query.start_age;
         const end_age = req.query.end_age;
+        const common_interest= req.query.common_interest;
 
-        if(start_age || end_age){
-            if(start_age && end_age){
+        if (start_age || end_age) {
+            if (start_age && end_age) {
             }
-            else{
-                return(
+            else {
+                return (
                     res.json({
                         message: "start_age and end_age must be provided if you want to apply age filter , otherwise dont provide any of them",
                         status: false
@@ -38,7 +39,7 @@ exports.viewCards = async (req, res) => {
                 )
             }
         }
-        
+
 
         user_id = parseInt(user_id)
         latitude = parseFloat(latitude);
@@ -52,7 +53,7 @@ exports.viewCards = async (req, res) => {
         let offset = (page - 1) * limit;
 
         const excludeProfileIds = await getSwipedProfileIds(user_id, 'right');
-        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds,limit, offset, radius , start_age , end_age , gender);
+        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender , common_interest);
         console.log(excludeProfileIds)
         if (potentialMatches) {
             res.json({
@@ -94,18 +95,18 @@ exports.swipe = async (req, res) => {
             return (res.json({ message: "user_id , swiped_user_id and swipe_direction must be provided", status: false }))
         }
 
-        if(swipe_direction == 'right'){
-            if(!likeType){
-                return(
+        if (swipe_direction == 'right') {
+            if (!likeType) {
+                return (
                     res.json({
                         message: "like type must be required if swipe_direction is right",
-                        status : false
+                        status: false
                     })
                 )
             }
             if (likeType == 'like' || likeType == 'superLike') { } else { return (res.json({ message: "like type must be only 'like' OR 'superLike'", status: false })) }
 
-           
+
         }
         if (swipe_direction == 'left' || swipe_direction == 'right') { } else { return (res.json({ message: "swipe direction must be left or right", status: false })) }
 
@@ -113,13 +114,13 @@ exports.swipe = async (req, res) => {
             liked = true;
             superLiked = false
         }
-        else if(likeType == 'superLike'){
+        else if (likeType == 'superLike') {
             superLiked = true
             liked = true
         }
-        else if(!likeType){
+        else if (!likeType) {
             liked = false,
-            superLiked = false
+                superLiked = false
         }
         const checkAlreadySwipeQuery = 'SELECT * FROM swipes WHERE user_id = $1 AND swiped_user_id = $2';
         const checkResult = await pool.query(checkAlreadySwipeQuery, [user_id, swiped_user_id]);
@@ -129,7 +130,7 @@ exports.swipe = async (req, res) => {
             console.log("in update")
             // already swiped by this user , no matter left or right
             let updateQuery = 'UPDATE swipes SET user_id = $1  , swipe_direction= $2 ,swiped_user_id = $3 ,liked = $4, superLiked= $5 WHERE user_id = $6 AND swiped_user_id = $7 RETURNING*';
-            result = await pool.query(updateQuery, [user_id, swipe_direction, swiped_user_id ,liked , superLiked , user_id , swiped_user_id]);
+            result = await pool.query(updateQuery, [user_id, swipe_direction, swiped_user_id, liked, superLiked, user_id, swiped_user_id]);
             if (result.rows[0]) {
                 result = result.rows[0]
             }
@@ -343,7 +344,7 @@ exports.getAllSuperLikes = async (req, res) => {
 exports.getAllSuperLikedUsers = async (req, res) => {
     const client = await pool.connect();
     try {
-  
+
         const foundQuery = `SELECT  u.user_id , u.email, u.password,
         json_agg(json_build_object(
             'swipe_direction', s.swipe_direction,
@@ -423,9 +424,9 @@ exports.getRightSwipesOfUser = async (req, res) => {
         WHERE
             wtr.user_id = $1 AND wtr.swipe_direction = $2;
     `;
-    
 
-        const foundResult = await pool.query(foundQuery, [user_id , "right"]);
+
+        const foundResult = await pool.query(foundQuery, [user_id, "right"]);
 
 
         if (foundResult.rows) {
@@ -487,9 +488,9 @@ exports.getLeftSwipesOfUser = async (req, res) => {
         WHERE
             wtr.user_id = $1 AND wtr.swipe_direction = $2;
     `;
-    
 
-        const foundResult = await pool.query(foundQuery, [user_id , "left"]);
+
+        const foundResult = await pool.query(foundQuery, [user_id, "left"]);
 
 
         if (foundResult.rows) {
@@ -569,23 +570,23 @@ exports.boost = async (req, res) => {
     }
 }
 
-exports.getAllBoostedProfiles = async(req,res)=>{
+exports.getAllBoostedProfiles = async (req, res) => {
     const client = await pool.connect();
 
-    try{
-        const query= 'SELECT * FROM users WHERE profile_boosted = $1';
-        const result = await pool.query(query , [true]);
+    try {
+        const query = 'SELECT * FROM users WHERE profile_boosted = $1';
+        const result = await pool.query(query, [true]);
 
-        if(result.rows.length>0){
+        if (result.rows.length > 0) {
             res.json({
-                message : "All current boosted profiles",
-                status : true,
-                result : result.rows
+                message: "All current boosted profiles",
+                status: true,
+                result: result.rows
             })
-        }else{
+        } else {
             res.json({
-                message : "Not Found",
-                status : false,
+                message: "Not Found",
+                status: false,
             })
         }
     }
@@ -663,36 +664,108 @@ async function getSwipedProfileIds(userId, direction) {
 
 }
 
-async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance , start_age , end_age , gender , common_interest ) {
+async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance, start_age, end_age, gender, common_interest) {
     try {
 
-        console.log(typeof(latitude))
-        let query ;
-        query = `
+        console.log(typeof (latitude))
+        let query;
+
+        if (gender) {
+            query = `
         SELECT *,
-    acos(sin(radians($1)) * sin(radians(latitude))
-        + cos(radians($1)) * cos(radians(latitude))
-        * cos(radians($2) - radians(longitude))) * 6371 AS distance
-FROM users
-WHERE user_id <> $3
-    AND user_id <> ALL($4)
-    AND (
-        (($5 IS NULL) OR (EXTRACT(YEAR FROM age(CURRENT_DATE, to_date(users.dob , 'YYYY-MM-DD')))) >= $5) -- Check minimum age if provided
-        AND (($6 IS NULL) OR (EXTRACT(YEAR FROM age(CURRENT_DATE, to_date(users.dob , 'YYYY-MM-DD')))) <= $6) -- Check maximum age if provided
-        AND ($7 IS NULL OR gender = $7) -- Check gender if provided
-        -- Add more conditions for additional filters
-    )
-    AND acos(sin(radians($1)) * sin(radians(latitude))
-        + cos(radians($1)) * cos(radians(latitude))
-        * cos(radians($2) - radians(longitude))) * 6371 <= $8
-ORDER BY profile_boosted DESC
-OFFSET $9 LIMIT $10;
+        EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
+        acos(sin(radians($1)) * sin(radians(latitude))
+            + cos(radians($1)) * cos(radians(latitude))
+            * cos(radians($2) - radians(longitude))) * 6371 AS distance
+    FROM users
+    
+    WHERE user_id <> $3
+        AND user_id <> ALL($4)
+        AND gender = $8
+        AND acos(sin(radians($1)) * sin(radians(latitude))
+            + cos(radians($1)) * cos(radians(latitude))
+            * cos(radians($2) - radians(longitude))) * 6371 <= $5
+    ORDER BY profile_boosted DESC
+    OFFSET $6 LIMIT $7;
 
-`; 
+`;
+        }
+        else{
+            query = `
+            SELECT *,
+            EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
+            acos(sin(radians($1)) * sin(radians(latitude))
+                + cos(radians($1)) * cos(radians(latitude))
+                * cos(radians($2) - radians(longitude))) * 6371 AS distance
+        FROM users
+        
+        WHERE user_id <> $3
+            AND user_id <> ALL($4)
+            AND acos(sin(radians($1)) * sin(radians(latitude))
+                + cos(radians($1)) * cos(radians(latitude))
+                * cos(radians($2) - radians(longitude))) * 6371 <= $5
+        ORDER BY profile_boosted DESC
+        OFFSET $6 LIMIT $7;
+    
+    `;
+        }
 
-        const values = [latitude, longitude, userId, excludeProfileIds,  start_age , end_age , gender ,maxDistance, offset, limit];
+        let values;
+        if(gender){       
+              values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, gender];
+        }
+        else{
+             values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit];
+
+        }
         const result = await pool.query(query, values);
-        return result.rows;
+        let array = result.rows;
+
+        if(start_age && end_age){
+            if(array){
+                array = array.filter(record => {
+                    if(record.age_years){
+                        if(record.age_years >=start_age && record.age_years <=end_age){
+                            return record
+                        }
+                    }
+                })
+             }
+        }
+         
+        if(common_interest == 'true'){
+            let interestQuery = 'SELECT * FROM users WHERE user_id = $1';
+            let current_user_interest;
+            let interestResult = await pool.query(interestQuery , [userId]);
+            console.log(interestResult.rows[0].interest)
+
+            if(interestResult){
+                if(interestResult.rows[0].interest){
+                    current_user_interest = interestResult.rows[0].interest;
+                    console.log(current_user_interest)
+                }
+            }
+
+            if(current_user_interest){
+                array = array.filter(record =>{
+                    if(record.interest){
+                        const contains = current_user_interest.some(element => {
+                            return record.interest.includes(element);
+                          });
+    
+                          if(contains){
+                            return(record)
+                          }
+                    }
+                })
+            }
+            else{
+                console.log("could not find any interest of this user")
+            }
+           
+        }
+        
+        return array;
     }
     catch (err) {
         console.log(err)

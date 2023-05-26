@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   dob TEXT,
   relation_type INTEGER,
   school INTEGER,
-  interest INTEGER,
+  interest INTEGER[],
   job_title TEXT ,
   company TEXT,
   category_id TEXT,
@@ -148,8 +148,6 @@ CREATE TABLE IF NOT EXISTS categories(
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-
-
 CREATE TABLE IF NOT EXISTS interests(
   interest_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
   interest_name  TEXT ,
@@ -158,8 +156,6 @@ CREATE TABLE IF NOT EXISTS interests(
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
-
-
 
 CREATE TABLE IF NOT EXISTS preference_types(
   preference_type_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
