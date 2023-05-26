@@ -149,6 +149,7 @@ exports.deletepreference_type = async (req, res) => {
         client.release();
       }
 }
+
 exports.getAllpreference_types = async (req, res) => {
     const client = await pool.connect();
     try {

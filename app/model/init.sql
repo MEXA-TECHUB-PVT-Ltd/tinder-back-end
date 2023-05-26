@@ -1,37 +1,33 @@
 
 CREATE SEQUENCE IF NOT EXISTS my_sequence START 100000;
 
+
+
 CREATE TABLE IF NOT EXISTS users (
   user_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
-   first_name TEXT  ,
-  last_name  TEXT,
+  name TEXT  ,
   email TEXT ,
+  phone_number TEXT,
   password TEXT,
-  profession TEXT ,
-  interests TEXT ,
-  appreciation_text TEXT ,
-  height TEXT ,
-  profile_picture TEXT ,
+  dob TEXT,
+  relation_type INTEGER,
+  school INTEGER,
+  interest INTEGER,
+  job_title TEXT ,
+  company TEXT,
+  category_id TEXT,
+  active_status BOOLEAN,
   gender TEXT ,
-  date_of_birth TEXT ,
-  country TEXT ,
-  state TEXT ,
-  city TEXT ,
-  education TEXT ,
-  academic_qualifications TEXT ,
-  graduated_university TEXT ,
-  smoke_status BOOLEAN DEFAULT false,
-  drink_status BOOLEAN DEFAULT false,
-  constellation_id INTEGER ,
-  annual_income  TEXT,
-  children INTEGER,
-  bio TEXT,
+  images TEXT[],
+  preference INT,
   longitude FLOAT ,
   latitude FLOAT ,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   profile_boosted BOOLEAN
 );
+
+
 
 CREATE TABLE IF NOT EXISTS otpStored(
   otp_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
@@ -187,9 +183,11 @@ CREATE TABLE IF NOT EXISTS reported_users_records(
 CREATE TABLE IF NOT EXISTS contacts(
   contact_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
   user_id INTEGER,
-  contact_name INTEGER ,
+  contact_name TEXT ,
   phone_number TEXT,
+  block BOOLEAN,
   trash BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
