@@ -9,7 +9,7 @@ router.delete("/deleteinterest" , controller.deleteinterest);
 router.get("/getAllinterests" , controller.getAllinterests);
 router.get("/getinterestById" , controller.getinterestById);
 router.get("/searchinterest" , controller.searchinterest);
-
+router.get("/getInterestsByCategory" , controller.getInterestsBycategory_id);
 
 // router.put("/deleteTemporarily" , controller.deleteTemporarily);
 // router.put("/recover_record" , controller.recover_record);

@@ -7,11 +7,22 @@ exports.addinterest = async (req, res) => {
     const client = await pool.connect();
     try {
         const interest_name = req.body.interest_name;
+        const category_id = req.body.category_id;
 
-        const query = 'INSERT INTO interests (interest_name) VALUES ($1) RETURNING*'
+        if(!interest_name || !category_id){
+            return(
+                res.json({
+                    message : "interest _name and category_id must be provided",
+                    status :false
+                })
+            )
+        }
+
+        const query = 'INSERT INTO interests (interest_name , category_id) VALUES ($1 , $2) RETURNING*'
         const result = await pool.query(query , 
             [
                 interest_name ? interest_name : null,
+                category_id ? category_id : null
               
             ]);
 
@@ -48,7 +59,7 @@ exports.updateinterest = async (req, res) => {
     try {
         const interest_id = req.body.interest_id;
         const interest_name = req.body.interest_name;
-
+        const category_id = req.body.category_id;
 
 
         if (!interest_id) {
@@ -73,6 +84,12 @@ exports.updateinterest = async (req, res) => {
             index ++
         }
       
+
+        if(category_id){
+            query+= `category_id = $${index} , `;
+            values.push(category_id)
+            index ++
+        }
 
         query += 'WHERE interest_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
@@ -159,7 +176,26 @@ exports.getAllinterests = async (req, res) => {
         let result;
 
         if (!page || !limit) {
-            const query = 'SELECT * FROM interests WHERE trash=$1'
+            const query = `SELECT json_agg(
+                json_build_object(
+                    'interest_id', int.interest_id,
+                    'interest_name', int.interest_name,
+                    'category', json_build_object(
+                        'category_id', c.category_id,
+                        'category_name', c.category_name,
+                        'image' , c.image,
+                        'trash', c.trash,
+                        'created_at', c.created_at,
+                        'updated_at', c.updated_at
+                        ),
+                    'trash', int.trash,
+                    'created_at', int.created_at,
+                    'updated_at', int.updated_at
+                )
+            ) 
+            FROM interests int
+            JOIN categories c ON int.category_id = c.category_id
+             WHERE trash = $1`
             result = await pool.query(query , [false]);
            
         }
@@ -168,7 +204,26 @@ exports.getAllinterests = async (req, res) => {
             limit = parseInt(limit);
             let offset= (parseInt(page)-1)* limit
 
-        const query = 'SELECT * FROM interests WHERE trash=$3 LIMIT $1 OFFSET $2'
+        const query = `SELECT json_agg(
+            json_build_object(
+                'interest_id', int.interest_id,
+                'interest_name', int.interest_name,
+                'category', json_build_object(
+                    'category_id', c.category_id,
+                    'category_name', c.category_name,
+                    'image' , c.image,
+                    'trash', c.trash,
+                    'created_at', c.created_at,
+                    'updated_at', c.updated_at
+                    ),
+                'trash', int.trash,
+                'created_at', int.created_at,
+                'updated_at', int.updated_at
+            )
+        ) 
+        FROM interests int
+        JOIN categories c ON int.category_id = c.category_id
+         WHERE int.trash=$3 LIMIT $1 OFFSET $2`
         result = await pool.query(query , [limit , offset , false]);
 
       
@@ -178,8 +233,8 @@ exports.getAllinterests = async (req, res) => {
             res.json({
                 message: "Fetched",
                 status: true,
-                count : result.rows.length,
-                result: result.rows
+                count : result.rows[0].json_agg.length,
+                result: result.rows[0].json_agg
             })
         }
         else {
@@ -214,14 +269,33 @@ exports.getinterestById= async (req, res) => {
                 })
             )
         }
-        const query = 'SELECT * FROM interests WHERE interest_id = $1'
+        const query = `SELECT json_agg(
+            json_build_object(
+                'interest_id', int.interest_id,
+                'interest_name', int.interest_name,
+                'category', json_build_object(
+                    'category_id', c.category_id,
+                    'category_name', c.category_name,
+                    'image' , c.image,
+                    'trash', c.trash,
+                    'created_at', c.created_at,
+                    'updated_at', c.updated_at
+                    ),
+                'trash', int.trash,
+                'created_at', int.created_at,
+                'updated_at', int.updated_at
+            )
+        ) 
+        FROM interests int
+        JOIN categories c ON int.category_id = c.category_id
+         WHERE interest_id = $1`
         const result = await pool.query(query , [interest_id]);
 
         if (result.rowCount>0) {
             res.json({
                 message: "Fetched",
                 status: true,
-                result: result.rows[0]
+                result: result.rows[0].json_agg
             })
         }
         else {
@@ -244,6 +318,70 @@ exports.getinterestById= async (req, res) => {
 
 }
 
+exports.getInterestsBycategory_id = async (req, res) => {
+    const client = await pool.connect();
+    try {
+
+        const category_id = req.query.category_id;
+        if(!category_id){
+            return(
+                res.json({
+                    message: "Category id must be provided",
+                    status : false
+                })
+            )
+        }
+        const query = `SELECT json_agg(
+            json_build_object(
+                'interest_id', int.interest_id,
+                'interest_name', int.interest_name,
+                'category', json_build_object(
+                    'category_id', c.category_id,
+                    'category_name', c.category_name,
+                    'image' , c.image,
+                    'trash', c.trash,
+                    'created_at', c.created_at,
+                    'updated_at', c.updated_at
+                    ),
+                'trash', int.trash,
+                'created_at', int.created_at,
+                'updated_at', int.updated_at
+            )
+        ) 
+        FROM interests int
+        JOIN categories c ON int.category_id = c.category_id
+        WHERE int.category_id = $1;
+ `
+
+ const result = await pool.query(query,[category_id])
+       
+        if (result.rows) {
+            res.json({
+                message: "Fetched",
+                status: true,
+                count : result.rows[0].json_agg.length,
+                result: result.rows[0].json_agg
+            })
+        }
+        else {
+            res.json({
+                message: "could not fetch",
+                status: false
+            })
+        }
+    }
+    catch (err) {
+        res.json({
+            message: "Error",
+            status: false,
+            error: err.message
+        })
+    }
+    finally {
+        client.release();
+      }
+
+}
 // exports.deleteTemporarily = async (req, res) => {
 //     const client = await pool.connect();
 //     try {

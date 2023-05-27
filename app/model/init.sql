@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   dob TEXT,
   relation_type INTEGER,
   school INTEGER,
-  interest INTEGER,
+  interest INTEGER[],
   job_title TEXT ,
   company TEXT,
   category_id TEXT,
@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS users (
   preference INT,
   longitude FLOAT ,
   latitude FLOAT ,
+  login_type TEXT,
+  insta_id TEXT,
+  spotify_id TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   profile_boosted BOOLEAN
@@ -148,6 +151,7 @@ CREATE TABLE IF NOT EXISTS categories(
 CREATE TABLE IF NOT EXISTS interests(
   interest_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
   interest_name  TEXT ,
+  category_id INTEGER,
   trash BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -186,6 +190,18 @@ CREATE TABLE IF NOT EXISTS contacts(
   contact_name TEXT ,
   phone_number TEXT,
   block BOOLEAN,
+  trash BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS notifications(
+  notification_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  sender TEXT , 
+  receiver TEXT,
+  text TEXT,
+  type TEXT,
+  read BOOLEAN DEFAULT false,
   trash BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

@@ -254,6 +254,64 @@ exports.getpreferenceById= async (req, res) => {
 
 }
 
+exports.getPreferencesByPreferenceType = async (req, res) => {
+    const client = await pool.connect();
+    try {
+
+
+        const query = `SELECT json_agg(
+            json_build_object(
+                'interest_id', int.interest_id,
+                'interest_name', int.interest_name,
+                'category', json_build_object(
+                    'category_id', c.category_id,
+                    'category_name', c.category_name,
+                    'image' , c.image,
+                    'trash', c.trash,
+                    'created_at', c.created_at,
+                    'updated_at', c.updated_at
+                    ),
+                'trash', int.trash,
+                'created_at', int.created_at,
+                'updated_at', int.updated_at
+            )
+        ) 
+        FROM pre int
+        JOIN categories c ON int.category_id = c.category_id
+        WHERE int.category_id = $1;
+ `
+
+ const result = await pool.query(query,[category_id])
+      
+
+        if (result.rows) {
+            res.json({
+                message: "Fetched",
+                status: true,
+                count : result.rows.length,
+                result: result.rows
+            })
+        }
+        else {
+            res.json({
+                message: "could not fetch",
+                status: false
+            })
+        }
+    }
+    catch (err) {
+        res.json({
+            message: "Error",
+            status: false,
+            error: err.message
+        })
+    }
+    finally {
+        client.release();
+      }
+
+}
+
 // exports.deleteTemporarily = async (req, res) => {
 //     const client = await pool.connect();
 //     try {
