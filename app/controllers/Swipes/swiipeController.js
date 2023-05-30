@@ -678,7 +678,6 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
             + cos(radians($1)) * cos(radians(latitude))
             * cos(radians($2) - radians(longitude))) * 6371 AS distance
     FROM users
-    
     WHERE user_id <> $3
         AND user_id <> ALL($4)
         AND gender = $8
