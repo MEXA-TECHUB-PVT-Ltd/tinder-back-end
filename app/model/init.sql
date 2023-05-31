@@ -1,8 +1,6 @@
 
 CREATE SEQUENCE IF NOT EXISTS my_sequence START 100000;
 
-
-
 CREATE TABLE IF NOT EXISTS users (
   user_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY,
   name TEXT  ,
@@ -27,7 +25,8 @@ CREATE TABLE IF NOT EXISTS users (
   spotify_id TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  profile_boosted BOOLEAN
+  profile_boosted BOOLEAN,
+  subscribed_status BOOLEAN
 );
 
 

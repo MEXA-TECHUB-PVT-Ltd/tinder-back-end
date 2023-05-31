@@ -764,6 +764,92 @@ exports.usersByInterest = async(req,res)=>{
     }
 }
 
+exports.getAllSubscribedUsers = async(req,res)=>{
+    try{
+   
+         let limit = req.query.limit;
+         let page = req.query.page
+ 
+         let result;
+ 
+         if (!page || !limit) {
+             const query = 'SELECT * FROM users WHERE subscribed_status = $1'
+            result = await pool.query(query , [true]);
+         }
+ 
+         if(page && limit){
+             limit = parseInt(limit);
+             let offset= (parseInt(page)-1)* limit;
+ 
+             const query = 'SELECT * FROM users WHERE subscribed_status = $3 LIMIT $1 OFFSET $2'
+             result = await pool.query(query , [limit , offset , true]);
+         }   
+       
+         if (result.rows) {
+             res.json({
+                 message: "Fetched",
+                 status: true,
+                 users_counts: result.rows.length,
+                 result: result.rows
+             })
+         }
+         else {
+             res.json({
+                 message: "could not fetch",
+                 status: false
+             })
+         }
+        
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }
+}
+
+exports.updateSubscribedStatus = async(req,res)=>{
+    try{
+        const user_id = req.query.user_id;
+        const subscribed_status = req.query.subscribed_status;
+   if(!user_id || !subscribed_status){
+    return(
+        res.json({
+            message: "user id , subscribed_status must be provided",
+            status : false
+        })
+    )
+   }
+        const query= 'UPDATE users SET subscribed_status = $1 WHERE user_id = $2 RETURNING*'
+        const result = await pool.query(query , [subscribed_status,user_id])
+         if (result.rows[0]) {
+             res.json({
+                 message: "Updated",
+                 status: true,
+                 result: result.rows[0]
+             })
+         }
+         else {
+             res.json({
+                 message: "could not updated",
+                 status: false
+             })
+         }
+        
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }
+}
+
 
 const registerSchema = Joi.object({
     email: Joi.string().min(6).required().email(),

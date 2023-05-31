@@ -13,7 +13,11 @@ router.put("/updatePassword" , controller.updatePassword)
 router.get("/getAllUsers"  , controller.getAllUsers)
 router.get("/usersByPreference"  , controller.usersByPreference)
 router.get("/usersByCategory"  , controller.usersByCategory)
-router.get("/usersByInterest"  , controller.usersByInterest)
+router.get("/getAllSubscribedUsers"  , controller.getAllSubscribedUsers)
+router.put("/updateSubscribedStatus" , controller.updateSubscribedStatus)
+
+
+
 
 
 
