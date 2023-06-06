@@ -850,6 +850,83 @@ exports.updateSubscribedStatus = async(req,res)=>{
     }
 }
 
+exports.updateActiveStatus = async(req,res)=>{
+    try{
+        const user_id = req.query.user_id;
+        const active_status = req.query.active_status;
+        last_online_time = null;
+        if(!user_id || !active_status){
+        return(
+            res.json({
+            message: "user id , active_status must be provided",
+            status : false
+        })
+    )
+   }
+
+
+   if(active_status == "true"){
+    const date = new Date(Date.now());
+        const utcString = date.toISOString();
+        last_online_time =utcString
+   }
+
+   
+
+   let query = 'UPDATE users SET ';
+   let index = 2;
+   let values =[user_id];
+
+
+   if(active_status){
+    query+= `active_status = $${index} , `;
+    values.push(active_status)
+    index ++
+}
+
+
+if(last_online_time){
+    query+= `last_online_time = $${index} , `;
+    values.push(last_online_time)
+    index ++
+}
+
+   query += 'WHERE user_id = $1 RETURNING*'
+   query = query.replace(/,\s+WHERE/g, " WHERE");
+   console.log(query);
+
+     
+
+     const result = await pool.query(query , values);
+
+
+         if (result.rows[0]) {
+             res.json({
+                 message: "Acive status updated",
+                 status: true,
+                 result: result.rows[0]
+             })
+         }
+         else {
+             res.json({
+                 message: "could not update active status",
+                 status: false
+             })
+         }
+        
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }
+}
+
+
+
 
 const registerSchema = Joi.object({
     email: Joi.string().min(6).required().email(),

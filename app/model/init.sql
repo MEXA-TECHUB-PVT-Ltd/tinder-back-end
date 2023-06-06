@@ -23,12 +23,13 @@ CREATE TABLE IF NOT EXISTS users (
   login_type TEXT,
   insta_id TEXT,
   spotify_id TEXT,
+  block_status BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   profile_boosted BOOLEAN,
+  last_online_time TEXT,
   subscribed_status BOOLEAN
 );
-
 
 
 CREATE TABLE IF NOT EXISTS otpStored(

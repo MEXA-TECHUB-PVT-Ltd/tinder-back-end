@@ -15,6 +15,8 @@ router.get("/usersByPreference"  , controller.usersByPreference)
 router.get("/usersByCategory"  , controller.usersByCategory)
 router.get("/getAllSubscribedUsers"  , controller.getAllSubscribedUsers)
 router.put("/updateSubscribedStatus" , controller.updateSubscribedStatus)
+router.put("/updateActiveStatus" , controller.updateActiveStatus)
+
 
 
 

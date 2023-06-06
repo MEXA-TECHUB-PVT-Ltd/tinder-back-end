@@ -8,6 +8,8 @@ router.get("/searchByAge" , controller.searchByAge);
 router.get("/searchByName" , controller.searchByName);
 router.get("/searchByCommonInterest" , controller.searchByCommonInterest);
 router.get("/searchByDistance" , controller.searchByDistance);
+router.get("/recentlyActive" , controller.recentlyActive);
+
 
 
 
