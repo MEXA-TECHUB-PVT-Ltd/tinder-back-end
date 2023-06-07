@@ -27,9 +27,11 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   profile_boosted BOOLEAN,
-  last_online_time TEXT,
+  last_online_time TIMESTAMPTZ,
   subscribed_status BOOLEAN
 );
+
+
 
 
 CREATE TABLE IF NOT EXISTS otpStored(
@@ -143,6 +145,7 @@ CREATE TABLE IF NOT EXISTS relation_type(
 CREATE TABLE IF NOT EXISTS categories(
   category_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
   category_name  TEXT ,
+  image TEXT,
   trash BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

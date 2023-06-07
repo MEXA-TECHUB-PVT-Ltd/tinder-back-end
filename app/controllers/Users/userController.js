@@ -865,7 +865,7 @@ exports.updateActiveStatus = async(req,res)=>{
    }
 
 
-   if(active_status == "true"){
+   if(active_status == "false"){
     const date = new Date(Date.now());
         const utcString = date.toISOString();
         last_online_time =utcString
