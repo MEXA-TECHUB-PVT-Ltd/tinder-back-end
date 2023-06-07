@@ -80,10 +80,12 @@ exports.searchByGender = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1 AND u.gender = $2`;
+            WHERE u.user_id <> $1 AND u.gender = $2 AND u.block_status = $3`
+            
+            ;
             result = await pool.query(query,
                 [
-                    user_id, gender
+                    user_id, gender , false
 
                 ]);
 
@@ -158,11 +160,12 @@ exports.searchByGender = async (req, res) => {
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
             WHERE u.user_id <> $1 AND u.gender = $2
+            AND u.block_status = $5
             LIMIT $3 OFFSET $4;
             `;
             result = await pool.query(query,
                 [
-                    user_id, gender, limit, offset
+                    user_id, gender, limit, offset , false
 
                 ]);
 
@@ -295,10 +298,11 @@ exports.searchByAge = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1`;
+            WHERE u.user_id <> $1
+            AND u.block_status = $2`;
             result = await pool.query(query,
                 [
-                    user_id
+                    user_id , false
 
                 ]);
 
@@ -376,12 +380,12 @@ exports.searchByAge = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1
+            WHERE u.user_id <> $1 AND u.block_status = $4
             LIMIT $2 OFFSET $3;
             `;
             result = await pool.query(query,
                 [
-                    user_id, limit, offset
+                    user_id, limit, offset , false
 
                 ]);
 
@@ -518,10 +522,10 @@ exports.searchByName = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1 AND u.name ILIKE $2`;
+            WHERE u.user_id <> $1 AND u.name ILIKE $2 AND u.block_status = $3`;
             result = await pool.query(query,
                 [
-                    user_id, name.concat('%')
+                    user_id, name.concat('%') , false
 
                 ]);
 
@@ -595,12 +599,12 @@ exports.searchByName = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1 AND u.name ILIKE $2
+            WHERE u.user_id <> $1 AND u.name ILIKE $2 AND u.block_status = $5
             LIMIT $3 OFFSET $4;
             `;
             result = await pool.query(query,
                 [
-                    user_id, name.concat("%"), limit, offset
+                    user_id, name.concat("%"), limit, offset , false
 
                 ]);
 
@@ -723,10 +727,10 @@ exports.searchByCommonInterest = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1`
+            WHERE u.user_id <> $1 AND u.block_status = $2`
             result = await pool.query(query,
                 [
-                    user_id
+                    user_id , false
 
                 ]);
 
@@ -800,12 +804,12 @@ exports.searchByCommonInterest = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1
+            WHERE u.user_id <> $1 AND u.block_status = $4
             LIMIT $2 OFFSET $3;
             `;
             result = await pool.query(query,
                 [
-                    user_id, limit, offset
+                    user_id, limit, offset , false
 
                 ]);
 
@@ -983,10 +987,10 @@ exports.searchByDistance= async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1`
+            WHERE u.user_id <> $1 AND u.block_status = $2`
             result = await pool.query(query,
                 [
-                    user_id,
+                    user_id,false
 
                 ]);
 
@@ -1063,7 +1067,7 @@ exports.searchByDistance= async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1
+            WHERE u.user_id <> $1 AND u.block_status = $7
             AND acos(sin(radians($6)) * sin(radians(u.latitude))
             + cos(radians($6)) * cos(radians(u.latitude))
             * cos(radians($5) - radians(u.longitude))) * 6371 <= $4
@@ -1071,7 +1075,7 @@ exports.searchByDistance= async (req, res) => {
             `;
             result = await pool.query(query,
                 [
-                    user_id, limit, offset , distance , longitude , latitude
+                    user_id, limit, offset , distance , longitude , latitude , false
 
                 ]);
 
@@ -1183,12 +1187,12 @@ exports.recentlyActive = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1
-             AND TO_TIMESTAMP(last_online_time) >= CURRENT_TIMESTAMP - INTERVAL '30 minutes'
+            WHERE u.user_id <> $1 AND u.block_status = $2
+            AND last_online_time >= NOW() - INTERVAL '30 minutes'
             `;
             result = await pool.query(query,
                 [
-                    user_id
+                    user_id , false
 
                 ]);
 
@@ -1262,30 +1266,28 @@ exports.recentlyActive = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LEFT OUTER JOIN swipes s ON u.user_id = s.swiped_user_id::integer AND s.user_id = $1 AND s.liked = true
-            WHERE u.user_id <> $1
-            AND to_timestamp(u.last_online_time, 'MM/DD/YYYY, HH:MI:SS PM') >= NOW()::timestamp AT TIME ZONE 'UTC' - INTERVAL '30 minutes'
+            WHERE u.user_id <> $1 AND u.block_status = $4
+            AND last_online_time >= NOW() - INTERVAL '30 minutes'
             LIMIT $2 OFFSET $3;
             `;
             result = await pool.query(query,
                 [
-                    user_id, limit, offset
+                    user_id, limit, offset , false
 
                 ]);
 
         }
 
-
-
         if (result.rows) {
             res.status(201).json({
-                message: "Fetched",
+                message: "All Users who were online in last 30 minutes",
                 status: true,
                 result: result.rows[0].json_agg
             })
         }
         else {
             res.status(400).json({
-                message: "Could not fetch",
+                message: "Could not fetch any user online within in last 30 minutes",
                 status: false
             })
         }
