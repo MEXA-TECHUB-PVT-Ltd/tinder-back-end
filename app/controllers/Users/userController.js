@@ -534,7 +534,70 @@ exports.viewProfile = async(req,res)=>{
          }
 
 
-         const query = 'SELECT * FROM users WHERE user_id = $1';
+         const query = `SELECT json_agg(
+            json_build_object(
+                'user_id', u.user_id,
+                'name', u.name,
+                'email', u.email,
+                'phone_number', u.phone_number,
+                'password', u.password,
+                'dob', u.dob,
+                'block_status' , u.block_status,
+                'school',json_build_object(
+                    'school_id', sch.school_id,
+                    'name', sch.name,
+                    'created_at', sch.created_at,
+                    'updated_at', sch.updated_at
+                ),
+                'interest', (
+                    SELECT json_agg(
+                        json_build_object(
+                            'interest_id', i.interest_id,
+                            'interest_name', i.interest_name,
+                            'created_at', i.created_at,
+                            'updated_at', i.updated_at
+                        )
+                    )
+                    FROM interests i
+                    WHERE i.interest_id IN (SELECT unnest(u.interest))
+                ),
+                'job_title', u.job_title,
+                'company', u.company,
+                'category',json_build_object(
+                    'category_id', cat.category_id,
+                    'category_name', cat.category_name,
+                    'created_at', cat.created_at,
+                    'trash', cat.trash
+                ),
+                'active_status', u.active_status,
+                'gender', u.gender,
+                'images', u.images,
+                'preference', json_build_object(
+                    'preference_id', pref.preference_id,
+                    'preference_type_id', pref.preference_type_id,
+                    'preference', pref.preference,
+                    'trash', pref.trash
+                ),
+                'longitude', u.longitude,
+                'latitude', u.latitude,
+                'login_type', u.login_type,
+                'created_at', u.created_at,
+                'updated_at', u.updated_at,
+                'profile_boosted', u.profile_boosted,
+                'relation_type', json_build_object(
+                    'relation_type_id', rt.relation_type_id,
+                    'type', rt.type,
+                    'created_at', rt.created_at,
+                    'updated_at', rt.updated_at
+                )
+                )
+        ) 
+        FROM users u
+        LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+        LEFT OUTER JOIN school sch ON u.school = sch.school_id
+        LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+        LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
+        WHERE u.user_id = $1`;
          const result = await pool.query(query , [user_id]);
 
 
@@ -572,7 +635,69 @@ exports.getAllUsers = async (req, res) => {
         let result;
 
         if (!page || !limit) {
-            const query = 'SELECT * FROM users'
+            const query = `SELECT json_agg(
+                json_build_object(
+                    'user_id', u.user_id,
+                    'name', u.name,
+                    'email', u.email,
+                    'phone_number', u.phone_number,
+                    'password', u.password,
+                    'dob', u.dob,
+                    'block_status' , u.block_status,
+                    'school',json_build_object(
+                        'school_id', sch.school_id,
+                        'name', sch.name,
+                        'created_at', sch.created_at,
+                        'updated_at', sch.updated_at
+                    ),
+                    'interest', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'interest_id', i.interest_id,
+                                'interest_name', i.interest_name,
+                                'created_at', i.created_at,
+                                'updated_at', i.updated_at
+                            )
+                        )
+                        FROM interests i
+                        WHERE i.interest_id IN (SELECT unnest(u.interest))
+                    ),
+                    'job_title', u.job_title,
+                    'company', u.company,
+                    'category',json_build_object(
+                        'category_id', cat.category_id,
+                        'category_name', cat.category_name,
+                        'created_at', cat.created_at,
+                        'trash', cat.trash
+                    ),
+                    'active_status', u.active_status,
+                    'gender', u.gender,
+                    'images', u.images,
+                    'preference', json_build_object(
+                        'preference_id', pref.preference_id,
+                        'preference_type_id', pref.preference_type_id,
+                        'preference', pref.preference,
+                        'trash', pref.trash
+                    ),
+                    'longitude', u.longitude,
+                    'latitude', u.latitude,
+                    'login_type', u.login_type,
+                    'created_at', u.created_at,
+                    'updated_at', u.updated_at,
+                    'profile_boosted', u.profile_boosted,
+                    'relation_type', json_build_object(
+                        'relation_type_id', rt.relation_type_id,
+                        'type', rt.type,
+                        'created_at', rt.created_at,
+                        'updated_at', rt.updated_at
+                    )
+                    )
+            ) 
+            FROM users u
+            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+            LEFT OUTER JOIN school sch ON u.school = sch.school_id
+            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id`
            result = await pool.query(query);
         }
 
@@ -580,7 +705,70 @@ exports.getAllUsers = async (req, res) => {
             limit = parseInt(limit);
             let offset= (parseInt(page)-1)* limit;
 
-            const query = 'SELECT * FROM users LIMIT $1 OFFSET $2'
+            const query = `SELECT json_agg(
+                json_build_object(
+                    'user_id', u.user_id,
+                    'name', u.name,
+                    'email', u.email,
+                    'phone_number', u.phone_number,
+                    'password', u.password,
+                    'dob', u.dob,
+                    'block_status' , u.block_status,
+                    'school',json_build_object(
+                        'school_id', sch.school_id,
+                        'name', sch.name,
+                        'created_at', sch.created_at,
+                        'updated_at', sch.updated_at
+                    ),
+                    'interest', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'interest_id', i.interest_id,
+                                'interest_name', i.interest_name,
+                                'created_at', i.created_at,
+                                'updated_at', i.updated_at
+                            )
+                        )
+                        FROM interests i
+                        WHERE i.interest_id IN (SELECT unnest(u.interest))
+                    ),
+                    'job_title', u.job_title,
+                    'company', u.company,
+                    'category',json_build_object(
+                        'category_id', cat.category_id,
+                        'category_name', cat.category_name,
+                        'created_at', cat.created_at,
+                        'trash', cat.trash
+                    ),
+                    'active_status', u.active_status,
+                    'gender', u.gender,
+                    'images', u.images,
+                    'preference', json_build_object(
+                        'preference_id', pref.preference_id,
+                        'preference_type_id', pref.preference_type_id,
+                        'preference', pref.preference,
+                        'trash', pref.trash
+                    ),
+                    'longitude', u.longitude,
+                    'latitude', u.latitude,
+                    'login_type', u.login_type,
+                    'created_at', u.created_at,
+                    'updated_at', u.updated_at,
+                    'profile_boosted', u.profile_boosted,
+                    'relation_type', json_build_object(
+                        'relation_type_id', rt.relation_type_id,
+                        'type', rt.type,
+                        'created_at', rt.created_at,
+                        'updated_at', rt.updated_at
+                    )
+                    )
+            ) 
+            FROM users u
+            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+            LEFT OUTER JOIN school sch ON u.school = sch.school_id
+            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
+             LIMIT $1 OFFSET $2`
             result = await pool.query(query , [limit , offset]);
         }   
       
@@ -588,8 +776,8 @@ exports.getAllUsers = async (req, res) => {
             res.json({
                 message: "Fetched",
                 status: true,
-                users_counts: result.rows.length,
-                result: result.rows
+                users_counts: result.rows[0].json_agg.length,
+                result: result.rows[0].json_agg
             })
         }
         else {
@@ -624,7 +812,70 @@ exports.usersByPreference = async(req,res)=>{
          let result;
  
          if (!page || !limit) {
-             const query = 'SELECT * FROM users WHERE preference = $1'
+             const query = `SELECT json_agg(
+                json_build_object(
+                    'user_id', u.user_id,
+                    'name', u.name,
+                    'email', u.email,
+                    'phone_number', u.phone_number,
+                    'password', u.password,
+                    'dob', u.dob,
+                    'block_status' , u.block_status,
+                    'school',json_build_object(
+                        'school_id', sch.school_id,
+                        'name', sch.name,
+                        'created_at', sch.created_at,
+                        'updated_at', sch.updated_at
+                    ),
+                    'interest', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'interest_id', i.interest_id,
+                                'interest_name', i.interest_name,
+                                'created_at', i.created_at,
+                                'updated_at', i.updated_at
+                            )
+                        )
+                        FROM interests i
+                        WHERE i.interest_id IN (SELECT unnest(u.interest))
+                    ),
+                    'job_title', u.job_title,
+                    'company', u.company,
+                    'category',json_build_object(
+                        'category_id', cat.category_id,
+                        'category_name', cat.category_name,
+                        'created_at', cat.created_at,
+                        'trash', cat.trash
+                    ),
+                    'active_status', u.active_status,
+                    'gender', u.gender,
+                    'images', u.images,
+                    'preference', json_build_object(
+                        'preference_id', pref.preference_id,
+                        'preference_type_id', pref.preference_type_id,
+                        'preference', pref.preference,
+                        'trash', pref.trash
+                    ),
+                    'longitude', u.longitude,
+                    'latitude', u.latitude,
+                    'login_type', u.login_type,
+                    'created_at', u.created_at,
+                    'updated_at', u.updated_at,
+                    'profile_boosted', u.profile_boosted,
+                    'relation_type', json_build_object(
+                        'relation_type_id', rt.relation_type_id,
+                        'type', rt.type,
+                        'created_at', rt.created_at,
+                        'updated_at', rt.updated_at
+                    )
+                    )
+            ) 
+            FROM users u
+            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+            LEFT OUTER JOIN school sch ON u.school = sch.school_id
+            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
+             WHERE u.preference = $1`
             result = await pool.query(query , [preference_id]);
          }
  
@@ -632,7 +883,70 @@ exports.usersByPreference = async(req,res)=>{
              limit = parseInt(limit);
              let offset= (parseInt(page)-1)* limit;
  
-             const query = 'SELECT * FROM users WHERE preference = $3 LIMIT $1 OFFSET $2'
+             const query = `SELECT json_agg(
+                json_build_object(
+                    'user_id', u.user_id,
+                    'name', u.name,
+                    'email', u.email,
+                    'phone_number', u.phone_number,
+                    'password', u.password,
+                    'dob', u.dob,
+                    'block_status' , u.block_status,
+                    'school',json_build_object(
+                        'school_id', sch.school_id,
+                        'name', sch.name,
+                        'created_at', sch.created_at,
+                        'updated_at', sch.updated_at
+                    ),
+                    'interest', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'interest_id', i.interest_id,
+                                'interest_name', i.interest_name,
+                                'created_at', i.created_at,
+                                'updated_at', i.updated_at
+                            )
+                        )
+                        FROM interests i
+                        WHERE i.interest_id IN (SELECT unnest(u.interest))
+                    ),
+                    'job_title', u.job_title,
+                    'company', u.company,
+                    'category',json_build_object(
+                        'category_id', cat.category_id,
+                        'category_name', cat.category_name,
+                        'created_at', cat.created_at,
+                        'trash', cat.trash
+                    ),
+                    'active_status', u.active_status,
+                    'gender', u.gender,
+                    'images', u.images,
+                    'preference', json_build_object(
+                        'preference_id', pref.preference_id,
+                        'preference_type_id', pref.preference_type_id,
+                        'preference', pref.preference,
+                        'trash', pref.trash
+                    ),
+                    'longitude', u.longitude,
+                    'latitude', u.latitude,
+                    'login_type', u.login_type,
+                    'created_at', u.created_at,
+                    'updated_at', u.updated_at,
+                    'profile_boosted', u.profile_boosted,
+                    'relation_type', json_build_object(
+                        'relation_type_id', rt.relation_type_id,
+                        'type', rt.type,
+                        'created_at', rt.created_at,
+                        'updated_at', rt.updated_at
+                    )
+                    )
+            ) 
+            FROM users u
+            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+            LEFT OUTER JOIN school sch ON u.school = sch.school_id
+            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
+             WHERE u.preference = $3 LIMIT $1 OFFSET $2`
              result = await pool.query(query , [limit , offset , preference_id]);
          }   
        
@@ -640,8 +954,8 @@ exports.usersByPreference = async(req,res)=>{
              res.json({
                  message: "Fetched",
                  status: true,
-                 users_counts: result.rows.length,
-                 result: result.rows
+                 users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
+                 result: result.rows[0].json_agg
              })
          }
          else {
@@ -675,7 +989,70 @@ exports.usersByCategory = async(req,res)=>{
          let result;
  
          if (!page || !limit) {
-             const query = 'SELECT * FROM users WHERE category_id = $1'
+             const query = `SELECT json_agg(
+                json_build_object(
+                    'user_id', u.user_id,
+                    'name', u.name,
+                    'email', u.email,
+                    'phone_number', u.phone_number,
+                    'password', u.password,
+                    'dob', u.dob,
+                    'block_status' , u.block_status,
+                    'school',json_build_object(
+                        'school_id', sch.school_id,
+                        'name', sch.name,
+                        'created_at', sch.created_at,
+                        'updated_at', sch.updated_at
+                    ),
+                    'interest', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'interest_id', i.interest_id,
+                                'interest_name', i.interest_name,
+                                'created_at', i.created_at,
+                                'updated_at', i.updated_at
+                            )
+                        )
+                        FROM interests i
+                        WHERE i.interest_id IN (SELECT unnest(u.interest))
+                    ),
+                    'job_title', u.job_title,
+                    'company', u.company,
+                    'category',json_build_object(
+                        'category_id', cat.category_id,
+                        'category_name', cat.category_name,
+                        'created_at', cat.created_at,
+                        'trash', cat.trash
+                    ),
+                    'active_status', u.active_status,
+                    'gender', u.gender,
+                    'images', u.images,
+                    'preference', json_build_object(
+                        'preference_id', pref.preference_id,
+                        'preference_type_id', pref.preference_type_id,
+                        'preference', pref.preference,
+                        'trash', pref.trash
+                    ),
+                    'longitude', u.longitude,
+                    'latitude', u.latitude,
+                    'login_type', u.login_type,
+                    'created_at', u.created_at,
+                    'updated_at', u.updated_at,
+                    'profile_boosted', u.profile_boosted,
+                    'relation_type', json_build_object(
+                        'relation_type_id', rt.relation_type_id,
+                        'type', rt.type,
+                        'created_at', rt.created_at,
+                        'updated_at', rt.updated_at
+                    )
+                    )
+            ) 
+            FROM users u
+            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+            LEFT OUTER JOIN school sch ON u.school = sch.school_id
+            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
+             WHERE u.category_id = $1`
             result = await pool.query(query , [category_id]);
          }
  
@@ -683,7 +1060,70 @@ exports.usersByCategory = async(req,res)=>{
              limit = parseInt(limit);
              let offset= (parseInt(page)-1)* limit;
  
-             const query = 'SELECT * FROM users WHERE category_id = $3 LIMIT $1 OFFSET $2'
+             const query = `SELECT json_agg(
+                json_build_object(
+                    'user_id', u.user_id,
+                    'name', u.name,
+                    'email', u.email,
+                    'phone_number', u.phone_number,
+                    'password', u.password,
+                    'dob', u.dob,
+                    'block_status' , u.block_status,
+                    'school',json_build_object(
+                        'school_id', sch.school_id,
+                        'name', sch.name,
+                        'created_at', sch.created_at,
+                        'updated_at', sch.updated_at
+                    ),
+                    'interest', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'interest_id', i.interest_id,
+                                'interest_name', i.interest_name,
+                                'created_at', i.created_at,
+                                'updated_at', i.updated_at
+                            )
+                        )
+                        FROM interests i
+                        WHERE i.interest_id IN (SELECT unnest(u.interest))
+                    ),
+                    'job_title', u.job_title,
+                    'company', u.company,
+                    'category',json_build_object(
+                        'category_id', cat.category_id,
+                        'category_name', cat.category_name,
+                        'created_at', cat.created_at,
+                        'trash', cat.trash
+                    ),
+                    'active_status', u.active_status,
+                    'gender', u.gender,
+                    'images', u.images,
+                    'preference', json_build_object(
+                        'preference_id', pref.preference_id,
+                        'preference_type_id', pref.preference_type_id,
+                        'preference', pref.preference,
+                        'trash', pref.trash
+                    ),
+                    'longitude', u.longitude,
+                    'latitude', u.latitude,
+                    'login_type', u.login_type,
+                    'created_at', u.created_at,
+                    'updated_at', u.updated_at,
+                    'profile_boosted', u.profile_boosted,
+                    'relation_type', json_build_object(
+                        'relation_type_id', rt.relation_type_id,
+                        'type', rt.type,
+                        'created_at', rt.created_at,
+                        'updated_at', rt.updated_at
+                    )
+                    )
+            ) 
+            FROM users u
+            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+            LEFT OUTER JOIN school sch ON u.school = sch.school_id
+            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
+             WHERE u.category_id = $3 LIMIT $1 OFFSET $2`
              result = await pool.query(query , [limit , offset , category_id]);
          }   
        
@@ -691,8 +1131,8 @@ exports.usersByCategory = async(req,res)=>{
              res.json({
                  message: "Fetched",
                  status: true,
-                 users_counts: result.rows.length,
-                 result: result.rows
+                 users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
+                 result: result.rows[0].json_agg
              })
          }
          else {
@@ -726,7 +1166,70 @@ exports.usersByInterest = async(req,res)=>{
          let result;
  
          if (!page || !limit) {
-             const query = 'SELECT * FROM users WHERE interest = $1'
+             const query = `SELECT json_agg(
+                json_build_object(
+                    'user_id', u.user_id,
+                    'name', u.name,
+                    'email', u.email,
+                    'phone_number', u.phone_number,
+                    'password', u.password,
+                    'dob', u.dob,
+                    'block_status' , u.block_status,
+                    'school',json_build_object(
+                        'school_id', sch.school_id,
+                        'name', sch.name,
+                        'created_at', sch.created_at,
+                        'updated_at', sch.updated_at
+                    ),
+                    'interest', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'interest_id', i.interest_id,
+                                'interest_name', i.interest_name,
+                                'created_at', i.created_at,
+                                'updated_at', i.updated_at
+                            )
+                        )
+                        FROM interests i
+                        WHERE i.interest_id IN (SELECT unnest(u.interest))
+                    ),
+                    'job_title', u.job_title,
+                    'company', u.company,
+                    'category',json_build_object(
+                        'category_id', cat.category_id,
+                        'category_name', cat.category_name,
+                        'created_at', cat.created_at,
+                        'trash', cat.trash
+                    ),
+                    'active_status', u.active_status,
+                    'gender', u.gender,
+                    'images', u.images,
+                    'preference', json_build_object(
+                        'preference_id', pref.preference_id,
+                        'preference_type_id', pref.preference_type_id,
+                        'preference', pref.preference,
+                        'trash', pref.trash
+                    ),
+                    'longitude', u.longitude,
+                    'latitude', u.latitude,
+                    'login_type', u.login_type,
+                    'created_at', u.created_at,
+                    'updated_at', u.updated_at,
+                    'profile_boosted', u.profile_boosted,
+                    'relation_type', json_build_object(
+                        'relation_type_id', rt.relation_type_id,
+                        'type', rt.type,
+                        'created_at', rt.created_at,
+                        'updated_at', rt.updated_at
+                    )
+                    )
+            ) 
+            FROM users u
+            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+            LEFT OUTER JOIN school sch ON u.school = sch.school_id
+            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
+             WHERE $1 IN (SELECT unnest(u.interest))`
             result = await pool.query(query , [interest]);
          }
  
@@ -734,7 +1237,70 @@ exports.usersByInterest = async(req,res)=>{
              limit = parseInt(limit);
              let offset= (parseInt(page)-1)* limit;
  
-             const query = 'SELECT * FROM users WHERE interest = $3 LIMIT $1 OFFSET $2'
+             const query = `SELECT json_agg(
+                json_build_object(
+                    'user_id', u.user_id,
+                    'name', u.name,
+                    'email', u.email,
+                    'phone_number', u.phone_number,
+                    'password', u.password,
+                    'dob', u.dob,
+                    'block_status' , u.block_status,
+                    'school',json_build_object(
+                        'school_id', sch.school_id,
+                        'name', sch.name,
+                        'created_at', sch.created_at,
+                        'updated_at', sch.updated_at
+                    ),
+                    'interest', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'interest_id', i.interest_id,
+                                'interest_name', i.interest_name,
+                                'created_at', i.created_at,
+                                'updated_at', i.updated_at
+                            )
+                        )
+                        FROM interests i
+                        WHERE i.interest_id IN (SELECT unnest(u.interest))
+                    ),
+                    'job_title', u.job_title,
+                    'company', u.company,
+                    'category',json_build_object(
+                        'category_id', cat.category_id,
+                        'category_name', cat.category_name,
+                        'created_at', cat.created_at,
+                        'trash', cat.trash
+                    ),
+                    'active_status', u.active_status,
+                    'gender', u.gender,
+                    'images', u.images,
+                    'preference', json_build_object(
+                        'preference_id', pref.preference_id,
+                        'preference_type_id', pref.preference_type_id,
+                        'preference', pref.preference,
+                        'trash', pref.trash
+                    ),
+                    'longitude', u.longitude,
+                    'latitude', u.latitude,
+                    'login_type', u.login_type,
+                    'created_at', u.created_at,
+                    'updated_at', u.updated_at,
+                    'profile_boosted', u.profile_boosted,
+                    'relation_type', json_build_object(
+                        'relation_type_id', rt.relation_type_id,
+                        'type', rt.type,
+                        'created_at', rt.created_at,
+                        'updated_at', rt.updated_at
+                    )
+                    )
+            ) 
+            FROM users u
+            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
+            LEFT OUTER JOIN school sch ON u.school = sch.school_id
+            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
+            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id 
+            WHERE $3 IN (SELECT unnest(u.interest)) LIMIT $1 OFFSET $2`
              result = await pool.query(query , [limit , offset , interest]);
          }   
        
@@ -742,8 +1308,8 @@ exports.usersByInterest = async(req,res)=>{
              res.json({
                  message: "Fetched",
                  status: true,
-                 users_counts: result.rows.length,
-                 result: result.rows
+                 users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
+                 result: result.rows[0].json_agg
              })
          }
          else {
@@ -925,6 +1491,65 @@ if(last_online_time){
     }
 }
 
+exports.updateBlockStatus = async(req,res)=>{
+    try{
+        const user_id = req.query.user_id;
+        const block_status = req.query.block_status;
+
+        if(!user_id || !block_status){
+        return(
+            res.json({
+            message: "user id , block_status must be provided",
+            status : false
+        })
+    )
+   }
+
+
+   let query = 'UPDATE users SET ';
+   let index = 2;
+   let values =[user_id];
+
+
+   if(block_status){
+    query+= `block_status = $${index} , `;
+    values.push(block_status)
+    index ++
+}
+
+   query += 'WHERE user_id = $1 RETURNING*'
+   query = query.replace(/,\s+WHERE/g, " WHERE");
+   console.log(query);
+
+     
+
+     const result = await pool.query(query , values);
+
+
+         if (result.rows[0]) {
+             res.json({
+                 message: "block_status updated",
+                 status: true,
+                 result: result.rows[0]
+             })
+         }
+         else {
+             res.json({
+                 message: "could not update block_status",
+                 status: false
+             })
+         }
+        
+    }
+    catch (err) {
+        console.log(err)
+        res.json({
+            message: "Error Occurred",
+            status: false,
+            error: err.message
+        })
+    }
+}
 
 
 

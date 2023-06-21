@@ -14,6 +14,8 @@ router.get("/getAllBoostedProfiles" , controller.getAllBoostedProfiles);
 router.get("/getRightSwipesOfUser" , controller.getRightSwipesOfUser);
 router.get("/getLeftSwipesOfUser" , controller.getLeftSwipesOfUser);
 router.get("/getAllSuperLikedUsers" , controller.getAllSuperLikedUsers);
+router.get("/getAllUserWhoLikedYou" , controller.getAllUserWhoLikedYou);
+
 
 
 
