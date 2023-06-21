@@ -228,12 +228,12 @@ exports.getAllinterests = async (req, res) => {
 
       
         }
-       
+        
         if (result.rows) {
             res.json({
                 message: "Fetched",
                 status: true,
-                count : result.rows[0].json_agg.length,
+                count : result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
                 result: result.rows[0].json_agg
             })
         }

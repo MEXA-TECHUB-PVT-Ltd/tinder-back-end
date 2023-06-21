@@ -311,7 +311,7 @@ exports.getAllSuperLikes = async (req, res) => {
             return (res.json({ message: "user_id  must be provided", status: false }))
         }
 
-        const foundQuery = `SELECT swipes.user_id , swipes.liked , swipes.superLiked ,users.first_name , users.last_name , users.email , users.profile_picture , users.country
+        const foundQuery = `SELECT swipes.user_id , swipes.liked , swipes.superLiked ,users.name, users.email , users.images
         FROM swipes
         LEFT OUTER JOIN users ON swipes.swiped_user_id = users.user_id
         WHERE swipes.swiped_user_id = $1 AND swipes.superLiked = $2;`;
@@ -405,15 +405,15 @@ exports.getRightSwipesOfUser = async (req, res) => {
             wtr.superLiked,
             json_build_object(
                 'user_id', wt.user_id,
-                'first_name', wt.first_name,
-                'last_name', wt.last_name,
+                'name', wt.name,
+                'email' , wt.email,
                 'created_at', wt.created_at,
                 'updated_at', wt.updated_at
             ) AS user_details,
             json_build_object(
-                'user_id', wtu.user_id,
-                'first_name', wtu.first_name,
-                'last_name', wtu.last_name,
+                'user_id', wt.user_id,
+                'name', wt.name,
+                'email' , wt.email,
                 'created_at', wtu.created_at,
                 'updated_at', wtu.updated_at
             ) AS swiped_user_details
@@ -469,15 +469,15 @@ exports.getLeftSwipesOfUser = async (req, res) => {
             wtr.superLiked,
             json_build_object(
                 'user_id', wt.user_id,
-                'first_name', wt.first_name,
-                'last_name', wt.last_name,
+                'name', wt.name,
+                'email' , wt.email,
                 'created_at', wt.created_at,
                 'updated_at', wt.updated_at
             ) AS user_details,
             json_build_object(
-                'user_id', wtu.user_id,
-                'first_name', wtu.first_name,
-                'last_name', wtu.last_name,
+                'user_id', wt.user_id,
+                'name', wt.name,
+                'email' , wt.email,
                 'created_at', wtu.created_at,
                 'updated_at', wtu.updated_at
             ) AS swiped_user_details
@@ -587,6 +587,70 @@ exports.getAllBoostedProfiles = async (req, res) => {
             res.json({
                 message: "Not Found",
                 status: false,
+            })
+        }
+    }
+    catch (err) {
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+exports.getAllUserWhoLikedYou = async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const user_id = req.query.user_id;
+
+        if (!user_id) {
+            return (res.json({ message: "user_id  must be provided", status: false }))
+        }
+
+        const foundQuery = `
+        SELECT
+            wtr.swipe_id,
+            wtr.swipe_direction,
+            wtr.user_id,
+            wtr.swiped_user_id,
+            wtr.liked,
+            wtr.superLiked,
+            json_build_object(
+                'user_id', wt.user_id,
+                'name', wt.name,
+                'email' , wt.email,
+                'created_at', wt.created_at,
+                'updated_at', wt.updated_at
+            ) AS user_details,
+            json_build_object(
+                'user_id', wt.user_id,
+                'name', wt.name,
+                'email' , wt.email,
+                'created_at', wtu.created_at,
+                'updated_at', wtu.updated_at
+            ) AS swiped_user_details
+        FROM
+            swipes wtr
+            JOIN users wt ON wtr.user_id = wt.user_id
+            JOIN users wtu ON wtr.swiped_user_id = wtu.user_id
+        WHERE
+            wtr.swiped_user_id = $1 AND wtr.swipe_direction = $2;
+    `;
+
+
+        const foundResult = await pool.query(foundQuery, [user_id, "right"]);
+
+
+        if (foundResult.rows) {
+            res.json({
+                message: "All Users who swiped This user",
+                status: true,
+                result: foundResult.rows
+            })
+        }
+        else {
+            res.json({
+                message: "Could not fetch",
+                status: false
             })
         }
     }
