@@ -31,10 +31,6 @@ CREATE TABLE IF NOT EXISTS users (
   subscribed_status BOOLEAN
 );
 
-
-
-
-
 CREATE TABLE IF NOT EXISTS otpStored(
   otp_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
   email  TEXT ,
@@ -160,7 +156,6 @@ CREATE TABLE IF NOT EXISTS interests(
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
-
 
 CREATE TABLE IF NOT EXISTS preference_types(
   preference_type_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,

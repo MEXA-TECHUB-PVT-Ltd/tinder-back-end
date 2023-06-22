@@ -15,6 +15,8 @@ router.get("/getRightSwipesOfUser" , controller.getRightSwipesOfUser);
 router.get("/getLeftSwipesOfUser" , controller.getLeftSwipesOfUser);
 router.get("/getAllSuperLikedUsers" , controller.getAllSuperLikedUsers);
 router.get("/getAllUserWhoLikedYou" , controller.getAllUserWhoLikedYou);
+router.get("/getAllPlatformMatchesCount" , controller.getAllPlatformMatchesCount);
+
 
 
 

@@ -661,6 +661,43 @@ exports.getAllUserWhoLikedYou = async (req, res) => {
     }
 }
 
+exports.getAllPlatformMatchesCount = async (req,res)=>{
+   try{
+        const query = `SELECT COUNT(*) AS total_matches
+        FROM (
+          SELECT LEAST(user_id, swiped_user_id) AS user1,
+                 GREATEST(user_id, swiped_user_id) AS user2
+          FROM swipes
+          WHERE liked = true
+          GROUP BY LEAST(user_id, swiped_user_id), GREATEST(user_id, swiped_user_id)
+          HAVING COUNT(*) = 2
+        ) AS matches;
+        `;
+
+        const result = await pool.query(query);
+        if(result.rows[0]){
+            res.json({
+                message  : "Success",
+                status : true,
+                result : result.rows[0]
+            })
+        }
+        else{
+            res.json({
+                message: " Could not found",
+                status : false
+            })
+        }
+    }
+    catch(err){
+        res.json({
+            message: "Error Occured",
+            status : false ,
+            error : err.message
+        })
+         }
+}
+
 async function checkForMatch(userId, swipedUserId, pool) {
     try {
         const result = await pool.query(`
