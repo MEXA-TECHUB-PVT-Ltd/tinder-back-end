@@ -35,7 +35,6 @@ exports.add_aboutus = async(req,res)=>{
       }
 }
 
-
 exports.getAlladd_aboutus= async(req,res)=>{
     const client = await pool.connect();
 

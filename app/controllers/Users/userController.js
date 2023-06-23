@@ -289,14 +289,17 @@ exports.updateProfile= async (req,res)=>{
 
 
 
-        if(images.length >6 || images.length < 2){
-            return(
-                res.json({
-                    message: "Images can not be greater than 6 or less than 2 ",
-                    status : false,
-                })
-            )
+        if(images){
+            if(images.length >6 || images.length < 2){
+                return(
+                    res.json({
+                        message: "Images can not be greater than 6 or less than 2 ",
+                        status : false,
+                    })
+                )
+            }
         }
+       
 
 
         //filtering and modifying
