@@ -194,7 +194,7 @@ exports.getAllinterests = async (req, res) => {
                 )
             ) 
             FROM interests int
-            JOIN categories c ON int.category_id = c.category_id
+             LEFT OUTER JOIN categories c ON int.category_id = c.category_id
              WHERE trash = $1`
             result = await pool.query(query , [false]);
            
@@ -222,7 +222,7 @@ exports.getAllinterests = async (req, res) => {
             )
         ) 
         FROM interests int
-        JOIN categories c ON int.category_id = c.category_id
+        LEFT OUTER JOIN categories c ON int.category_id = c.category_id
          WHERE int.trash=$3 LIMIT $1 OFFSET $2`
         result = await pool.query(query , [limit , offset , false]);
 
@@ -287,7 +287,7 @@ exports.getinterestById= async (req, res) => {
             )
         ) 
         FROM interests int
-        JOIN categories c ON int.category_id = c.category_id
+        LEFT OUTER JOIN categories c ON int.category_id = c.category_id
          WHERE interest_id = $1`
         const result = await pool.query(query , [interest_id]);
 

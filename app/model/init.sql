@@ -207,3 +207,13 @@ CREATE TABLE IF NOT EXISTS notifications(
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS schedules_tables(
+  schedule_table_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
+  executeat TEXT , 
+  start_at TEXT,
+  user_id INT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+

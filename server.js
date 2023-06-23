@@ -1,6 +1,9 @@
 const express = require('express');
 const app = express();
-const {pool} = require('./app/config/db.config')
+const {pool} = require('./app/config/db.config');
+const fs = require('fs');
+
+const schedule = require('node-schedule');
 
 
 const PORT = process.env.PORT || 3000;
@@ -61,21 +64,15 @@ app.use('/search', require("./app/routes/Main/search_filterRoute"));
 
 
 
-
-
-
-
-
-
 //  app.use(auth)
  app.use("/imageUpload", require("./app/routes/ImageUpload/imageUploadRoute"))
-
-
 
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });
+
+
 
 
 
@@ -251,30 +248,38 @@ socket.on("ice-candidate", incoming => {
 
 
 
+async function updateUser(user_id){
+  try{
+    const query = 'UPDATE users SET profile_boosted = $1 WHERE user_id = $2 RETURNING *';
+       const result = await pool.query(query, [false, user_id]);
+       console.log(result.rows)
+       if(result.rows[0]){
+        console.log("Boosted Profile turned to false")
+       }
+  }
+  catch(err){
+    console.log("error Occurred while boosting turning false")
+  }
+}
 
+async function getSchedules(user_id){
+  try{
+    const query = 'SELECT * FROM schedules_tables';
+       const result = await pool.query(query);
+       console.log(result.rows)
+       if(result.rows){
+        return result.rows
+       }
+       else{
+        null
+       }
+  }
+  catch(err){
+    console.log("error Occurred ")
+    return null
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  }
+}
 
 
 

@@ -2,6 +2,8 @@
 const { pool } = require("../../config/db.config");
 const { use } = require("../../routes/Swipes/swipeRoute");
 const schedule = require('node-schedule');
+const fs = require('fs');
+var moment  = require('moment-timezone');
 
 
 
@@ -411,9 +413,9 @@ exports.getRightSwipesOfUser = async (req, res) => {
                 'updated_at', wt.updated_at
             ) AS user_details,
             json_build_object(
-                'user_id', wt.user_id,
-                'name', wt.name,
-                'email' , wt.email,
+                'user_id', wtu.user_id,
+                'name', wtu.name,
+                'email' , wtu.email,
                 'created_at', wtu.created_at,
                 'updated_at', wtu.updated_at
             ) AS swiped_user_details
@@ -475,9 +477,9 @@ exports.getLeftSwipesOfUser = async (req, res) => {
                 'updated_at', wt.updated_at
             ) AS user_details,
             json_build_object(
-                'user_id', wt.user_id,
-                'name', wt.name,
-                'email' , wt.email,
+                'user_id', wtu.user_id,
+                'name', wtu.name,
+                'email' , wtu.email,
                 'created_at', wtu.created_at,
                 'updated_at', wtu.updated_at
             ) AS swiped_user_details
@@ -530,16 +532,38 @@ exports.boost = async (req, res) => {
         console.log(result)
 
         if (result.rows.length > 0) {
-            const job = schedule.scheduleJob(new Date(Date.now() + 30 * 60 * 1000), async function () {
+            const job = schedule.scheduleJob(new Date(Date.now() + 1 * 60 * 1000), async function () {
                 const query = 'UPDATE users SET profile_boosted = $1 WHERE user_id = $2 RETURNING *';
                 const result = await pool.query(query, [false, user_id]);
                 console.log('Profile boosting time is over');
+
+                const deleteScheduledTaskQuery  = "DELETE FROM schedules_tables WHERE user_id = $1 RETURNING*";
+                const deltedResult  = await pool.query(deleteScheduledTaskQuery , [user_id]);
+                if(deltedResult.rows[0]){
+                    console.log("scheduled tasks deleted successfully");
+                }
             });
+
+            let executeat = new Date(Date.now() + (1*60*1000));
+            let start_at = new Date(Date.now());
+
+            console.log(executeat)
+            // Save the scheduled job details to the DB,
+
+            const insertLogQuery = 'INSERT INTO schedules_tables (user_id , executeat , start_at) VALUES($1, $2, $3) RETURNING *';
+
+            const insertResult = await pool.query(insertLogQuery, [user_id , executeat, start_at]);
+            if(insertResult.rows[0]){
+                console.log("Task saved in Database");
+            }else{
+                console.log("Could not save task");
+            }
+
 
             setTimeout(function () {
                 job.cancel();
                 console.log('Profile boosting time is over');
-            }, 30 * 60 * 1000);
+            }, 1 * 60 * 1000);
 
             if (result.rows.length > 0) {
                 res.json({
