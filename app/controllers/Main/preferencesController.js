@@ -169,7 +169,20 @@ exports.getAllpreferences = async (req, res) => {
         let result;
 
         if (!page || !limit) {
-            const query = 'SELECT * FROM preferences WHERE trash=$1'
+            const query = `SELECT  
+            p.preference_id ,
+            p.preference,
+            json_agg(json_build_object(
+                'preference_type_id' , pt.preference_type_id,
+                'preference_type' , pt.preference_type,
+                'created_at', pt.created_at,
+                'updated_at', pt.updated_at
+            )) AS preference_type
+            FROM preference_types pt
+        JOIN preferences p ON p.preference_type_id = pt.preference_type_id
+        WHERE p.trash = $1
+            GROUP BY p.preference_type_id , p.preference_id
+            `
             result = await pool.query(query , [false]);
            
         }
@@ -178,7 +191,20 @@ exports.getAllpreferences = async (req, res) => {
             limit = parseInt(limit);
             let offset= (parseInt(page)-1)* limit
 
-        const query = 'SELECT * FROM preferences WHERE trash=$3 LIMIT $1 OFFSET $2'
+        const query = `SELECT  
+        p.preference_id ,
+        p.preference,
+        json_agg(json_build_object(
+            'preference_type_id' , pt.preference_type_id,
+            'preference_type' , pt.preference_type,
+            'created_at', pt.created_at,
+            'updated_at', pt.updated_at
+        )) AS preference_type
+        FROM preference_types pt
+        JOIN preferences p ON p.preference_type_id = pt.preference_type_id
+        WHERE p.trash = $3
+        GROUP BY p.preference_type_id , p.preference_id
+        LIMIT $1 OFFSET $2`
         result = await pool.query(query , [limit , offset , false]);
 
       
@@ -224,7 +250,19 @@ exports.getpreferenceById= async (req, res) => {
                 })
             )
         }
-        const query = 'SELECT * FROM preferences WHERE preference_id = $1'
+        const query = `SELECT  
+        p.preference_id ,
+        p.preference,
+        json_agg(json_build_object(
+            'preference_type_id' , pt.preference_type_id,
+            'preference_type' , pt.preference_type,
+            'created_at', pt.created_at,
+            'updated_at', pt.updated_at
+        )) AS preference_type
+        FROM preference_types pt
+        JOIN preferences p ON p.preference_type_id = pt.preference_type_id
+        WHERE preference_id = $1
+        GROUP BY p.preference_id`
         const result = await pool.query(query , [preference_id]);
 
         if (result.rowCount>0) {

@@ -137,8 +137,8 @@ exports.getUserNotifications = async (req, res) => {
             )
         ) 
         FROM notifications n
-        JOIN users u ON n.sender = u.user_id
-        JOIN users us ON n.receiver = us.user_id
+        LEFT OUTER JOIN users u ON n.sender = u.user_id
+       LEFT OUTER JOIN users us ON n.receiver = us.user_id
 
         WHERE n.receiver = $1
         

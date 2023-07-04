@@ -73,28 +73,36 @@ exports.reportUser = async (req, res) => {
 exports.getReportedUsers= async (req, res) => {
     const client = await pool.connect();
     try {
-        const foundQuery = `SELECT  u.user_id , u.email, u.password,
-        json_agg(json_build_object(
-            'reported_users_record_id' , rus.reported_users_record_id,
-            'user_id' , rus.user_id,
-            'reported_by' , rus.reported_by,
-            'report_reason' , rus.report_reason,
-            'trash' , rus.trash,
-            'created_at', rus.created_at,
-            'updated_at', rus.updated_at
-        )) AS reported_by
-        FROM reported_users_records rus
-        JOIN users u ON rus.user_id = u.user_id
-        GROUP BY u.user_id,u.email, u.password
+        const foundQuery = `SELECT u.user_id, u.email, u.password, u.name, u.images,
+        json_agg(
+            json_build_object(
+                'reported_users_record_id', rus.reported_users_record_id,
+                'user_id', rus.user_id,
+                'reported_by_user', json_build_object(
+                    'user_id', ru.user_id,
+                    'email', ru.email,
+                    'name', ru.name,
+                    'images', ru.images
+                ),
+                'report_reason', rus.report_reason,
+                'trash', rus.trash,
+                'created_at', rus.created_at,
+                'updated_at', rus.updated_at
+            )
+        ) AS reported_by
+ FROM reported_users_records rus
+ JOIN users u ON rus.user_id = u.user_id
+ JOIN users ru ON rus.reported_by = ru.user_id
+ GROUP BY u.user_id, u.email, u.password;
  
         `;
-        const result = await pool.query(foundQuery , );
+        const result = await pool.query(foundQuery);
 
-        if (result.rows[0]) {
+        if (result.rows) {
             res.status(201).json({
                 message: "Fetched All reported users.",
                 status: true,
-                result: result.rows[0]
+                result: result.rows
             })
         }
         else {
@@ -132,11 +140,16 @@ exports.get_a_reported_user= async (req, res) => {
                 })
             )
         }
-        const foundQuery = `SELECT  u.user_id , u.email, u.password,
+        const foundQuery = `SELECT  u.user_id , u.email, u.password,u.name, u.images,
         json_agg(json_build_object(
             'reported_users_record_id' , rus.reported_users_record_id,
             'user_id' , rus.user_id,
-            'reported_by' , rus.reported_by,
+            'reported_by_user', json_build_object(
+                'user_id', ru.user_id,
+                'email', ru.email,
+                'name', ru.name,
+                'images', ru.images
+            ),
             'report_reason' , rus.report_reason,
             'trash' , rus.trash,
             'created_at', rus.created_at,
@@ -144,6 +157,8 @@ exports.get_a_reported_user= async (req, res) => {
         )) AS reported_users_records
         FROM reported_users_records rus
         JOIN users u ON rus.user_id = u.user_id
+        JOIN users ru ON rus.reported_by = ru.user_id
+
         WHERE rus.user_id = $1
         GROUP BY u.user_id,u.email, u.password
          `;

@@ -201,8 +201,8 @@ CREATE TABLE IF NOT EXISTS contacts(
 
 CREATE TABLE IF NOT EXISTS notifications(
   notification_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
-  sender TEXT , 
-  receiver TEXT,
+  sender INT , 
+  receiver INT,
   text TEXT,
   type TEXT,
   read BOOLEAN DEFAULT false,
@@ -210,6 +210,8 @@ CREATE TABLE IF NOT EXISTS notifications(
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+
 
 CREATE TABLE IF NOT EXISTS schedules_tables(
   schedule_table_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,
