@@ -31,7 +31,6 @@ pool.connect((err, client, release) => {
     console.log('Connected to database successfully');
     console.log('Initializing tables ... ');
 
-
     release();
   }
 });
@@ -48,7 +47,6 @@ pool.query(initSql, async (err, result) => {
   }
 
   if (!err) {
-
     try {
       const result = await getSchedules();
       let scheduledJobs = result
@@ -96,17 +94,11 @@ pool.query(initSql, async (err, result) => {
           }
         });
       }
-
-
-
-
     }
     catch (err) {
       console.log(err)
     }
-
   }
-
 })
 
 
