@@ -16,8 +16,11 @@ CREATE TABLE IF NOT EXISTS users (
   category_id TEXT,
   active_status BOOLEAN,
   gender TEXT ,
+  bio TEXT,
   images TEXT[],
   preference INT,
+  city TEXT,
+  country TEXT,
   longitude FLOAT ,
   latitude FLOAT ,
   login_type TEXT,
@@ -30,6 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
   last_online_time TIMESTAMPTZ,
   subscribed_status BOOLEAN
 );
+
 
 CREATE TABLE IF NOT EXISTS otpStored(
   otp_id INT NOT NULL DEFAULT nextval('my_sequence') PRIMARY KEY ,

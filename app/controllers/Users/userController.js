@@ -283,6 +283,10 @@ exports.updateProfile= async (req,res)=>{
         const preference = req.body.preference;
         const insta_id = req.body.insta_id;
         const spotify_id = req.body.spotify_id;
+        const city = req.body.city;
+        const country = req.body.country;
+        const bio = req.body.bio;
+
 
         let longitude = req.body.longitude;
         let latitude = req.body.latitude;
@@ -430,6 +434,25 @@ exports.updateProfile= async (req,res)=>{
         values.push(latitude)
         index ++
     }
+
+    if(city){
+        query+= `city = $${index} , `;
+        values.push(city)
+        index ++
+    }
+
+    if(country){
+        query+= `country = $${index} , `;
+        values.push(country)
+        index ++
+    }
+
+    if(bio){
+        query+= `bio = $${index} , `;
+        values.push(bio)
+        index ++
+    }
+
 
 
     query += 'WHERE user_id = $1 RETURNING*'
@@ -583,6 +606,9 @@ exports.viewProfile = async(req,res)=>{
                 ),
                 'longitude', u.longitude,
                 'latitude', u.latitude,
+                'city', u.city,
+                'country', u.country,
+                'bio', u.bio,
                 'login_type', u.login_type,
                 'created_at', u.created_at,
                 'updated_at', u.updated_at,
@@ -592,6 +618,20 @@ exports.viewProfile = async(req,res)=>{
                     'type', rt.type,
                     'created_at', rt.created_at,
                     'updated_at', rt.updated_at
+                ),
+                'match_count', (
+                    SELECT COUNT(*)
+                    FROM users mu
+                    WHERE mu.user_id IN (
+                        SELECT swiped_user_id
+                        FROM swipes
+                        WHERE user_id = u.user_id AND swipe_direction = 'right'
+                            AND swiped_user_id IN (
+                                SELECT user_id
+                                FROM swipes
+                                WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
+                            )
+                    )
                 )
                 )
         ) 
@@ -638,7 +678,7 @@ exports.getAllUsers = async (req, res) => {
         let result;
 
         if (!page || !limit) {
-            const query = `SELECT json_agg(
+            const query = `  SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
@@ -647,7 +687,7 @@ exports.getAllUsers = async (req, res) => {
                     'password', u.password,
                     'dob', u.dob,
                     'block_status' , u.block_status,
-                    'school',json_build_object(
+                    'school', json_build_object(
                         'school_id', sch.school_id,
                         'name', sch.name,
                         'created_at', sch.created_at,
@@ -667,7 +707,7 @@ exports.getAllUsers = async (req, res) => {
                     ),
                     'job_title', u.job_title,
                     'company', u.company,
-                    'category',json_build_object(
+                    'category', json_build_object(
                         'category_id', cat.category_id,
                         'category_name', cat.category_name,
                         'created_at', cat.created_at,
@@ -684,6 +724,9 @@ exports.getAllUsers = async (req, res) => {
                     ),
                     'longitude', u.longitude,
                     'latitude', u.latitude,
+                    'city', u.city,
+                    'country', u.country,
+                    'bio', u.bio,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -693,9 +736,23 @@ exports.getAllUsers = async (req, res) => {
                         'type', rt.type,
                         'created_at', rt.created_at,
                         'updated_at', rt.updated_at
+                    ),
+                    'match_count', (
+                        SELECT COUNT(*)
+                        FROM users mu
+                        WHERE mu.user_id IN (
+                            SELECT swiped_user_id
+                            FROM swipes
+                            WHERE user_id = u.user_id AND swipe_direction = 'right'
+                                AND swiped_user_id IN (
+                                    SELECT user_id
+                                    FROM swipes
+                                    WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
+                                )
+                        )
                     )
-                    )
-            ) 
+                )
+            )
             FROM users u
             LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
             LEFT OUTER JOIN school sch ON u.school = sch.school_id
@@ -708,7 +765,8 @@ exports.getAllUsers = async (req, res) => {
             limit = parseInt(limit);
             let offset= (parseInt(page)-1)* limit;
 
-            const query = `SELECT json_agg(
+            const query = `
+            SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
@@ -717,7 +775,7 @@ exports.getAllUsers = async (req, res) => {
                     'password', u.password,
                     'dob', u.dob,
                     'block_status' , u.block_status,
-                    'school',json_build_object(
+                    'school', json_build_object(
                         'school_id', sch.school_id,
                         'name', sch.name,
                         'created_at', sch.created_at,
@@ -737,7 +795,7 @@ exports.getAllUsers = async (req, res) => {
                     ),
                     'job_title', u.job_title,
                     'company', u.company,
-                    'category',json_build_object(
+                    'category', json_build_object(
                         'category_id', cat.category_id,
                         'category_name', cat.category_name,
                         'created_at', cat.created_at,
@@ -754,6 +812,9 @@ exports.getAllUsers = async (req, res) => {
                     ),
                     'longitude', u.longitude,
                     'latitude', u.latitude,
+                    'city', u.city,
+                    'country', u.country,
+                    'bio', u.bio,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -763,15 +824,29 @@ exports.getAllUsers = async (req, res) => {
                         'type', rt.type,
                         'created_at', rt.created_at,
                         'updated_at', rt.updated_at
+                    ),
+                    'match_count', (
+                        SELECT COUNT(*)
+                        FROM users mu
+                        WHERE mu.user_id IN (
+                            SELECT swiped_user_id
+                            FROM swipes
+                            WHERE user_id = u.user_id AND swipe_direction = 'right'
+                                AND swiped_user_id IN (
+                                    SELECT user_id
+                                    FROM swipes
+                                    WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
+                                )
+                        )
                     )
-                    )
-            ) 
+                )
+            )
             FROM users u
             LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
             LEFT OUTER JOIN school sch ON u.school = sch.school_id
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
-             LIMIT $1 OFFSET $2`
+            LIMIT $1 OFFSET $2`;
             result = await pool.query(query , [limit , offset]);
         }   
       
@@ -861,6 +936,9 @@ exports.usersByPreference = async(req,res)=>{
                     ),
                     'longitude', u.longitude,
                     'latitude', u.latitude,
+                    'city', u.city,
+                    'country', u.country,
+                    'bio', u.bio,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -932,6 +1010,9 @@ exports.usersByPreference = async(req,res)=>{
                     ),
                     'longitude', u.longitude,
                     'latitude', u.latitude,
+                    'city', u.city,
+                    'country', u.country,
+                    'bio', u.bio,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -1038,6 +1119,9 @@ exports.usersByCategory = async(req,res)=>{
                     ),
                     'longitude', u.longitude,
                     'latitude', u.latitude,
+                    'city', u.city,
+                    'country', u.country,
+                    'bio', u.bio,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -1109,6 +1193,9 @@ exports.usersByCategory = async(req,res)=>{
                     ),
                     'longitude', u.longitude,
                     'latitude', u.latitude,
+                    'city', u.city,
+                    'country', u.country,
+                    'bio', u.bio,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -1215,6 +1302,9 @@ exports.usersByInterest = async(req,res)=>{
                     ),
                     'longitude', u.longitude,
                     'latitude', u.latitude,
+                    'city', u.city,
+                    'country', u.country,
+                    'bio', u.bio,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -1286,6 +1376,9 @@ exports.usersByInterest = async(req,res)=>{
                     ),
                     'longitude', u.longitude,
                     'latitude', u.latitude,
+                    'city', u.city,
+                    'country', u.country,
+                    'bio', u.bio,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,

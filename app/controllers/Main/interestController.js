@@ -195,7 +195,7 @@ exports.getAllinterests = async (req, res) => {
             ) 
             FROM interests int
              LEFT OUTER JOIN categories c ON int.category_id = c.category_id
-             WHERE trash = $1`
+             WHERE int.trash = $1`
             result = await pool.query(query , [false]);
            
         }
