@@ -286,6 +286,7 @@ exports.updateProfile= async (req,res)=>{
         const city = req.body.city;
         const country = req.body.country;
         const bio = req.body.bio;
+        const verified_by_email = req.body.verified_by_email;
 
 
         let longitude = req.body.longitude;
@@ -453,6 +454,11 @@ exports.updateProfile= async (req,res)=>{
         index ++
     }
 
+    if(verified_by_email){
+        query+= `verified_by_email = $${index} , `;
+        values.push(verified_by_email)
+        index ++
+    }
 
 
     query += 'WHERE user_id = $1 RETURNING*'
@@ -569,6 +575,7 @@ exports.viewProfile = async(req,res)=>{
                 'password', u.password,
                 'dob', u.dob,
                 'block_status' , u.block_status,
+                'verified_by_email' , u.verified_by_email,
                 'school',json_build_object(
                     'school_id', sch.school_id,
                     'name', sch.name,
@@ -687,6 +694,7 @@ exports.getAllUsers = async (req, res) => {
                     'password', u.password,
                     'dob', u.dob,
                     'block_status' , u.block_status,
+                    'verified_by_email' , u.verified_by_email,
                     'school', json_build_object(
                         'school_id', sch.school_id,
                         'name', sch.name,
@@ -775,6 +783,7 @@ exports.getAllUsers = async (req, res) => {
                     'password', u.password,
                     'dob', u.dob,
                     'block_status' , u.block_status,
+                    'verified_by_email' , u.verified_by_email,
                     'school', json_build_object(
                         'school_id', sch.school_id,
                         'name', sch.name,
@@ -1647,7 +1656,48 @@ exports.updateBlockStatus = async(req,res)=>{
     }
 }
 
+exports.deleteUser = async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const user_id = req.query.user_id;
+        if (!user_id) {
+            return (
+                res.json({
+                    message: "Please provide user_id ",
+                    status: false
+                })
+            )
+        }
 
+        const query = 'DELETE FROM users WHERE user_id = $1 RETURNING *';
+        const result = await pool.query(query , [user_id]);
+
+        if(result.rowCount>0){
+            res.status(200).json({
+                message: "Deletion successfull",
+                status: true,
+                deletedRecord: result.rows[0]
+            })
+        }
+        else{
+            res.status(404).json({
+                message: "Could not delete . Record With this Id may not found or req.body may be empty",
+                status: false,
+            })
+        }
+
+    }
+    catch (err) {
+        res.json({
+            message: "Error",
+            status: false,
+            error: err.message
+        })
+    }
+    finally {
+        client.release();
+      }
+}
 
 const registerSchema = Joi.object({
     email: Joi.string().min(6).required().email(),
