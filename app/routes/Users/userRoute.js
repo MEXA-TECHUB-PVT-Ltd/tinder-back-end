@@ -19,6 +19,8 @@ router.put("/updateSubscribedStatus" , controller.updateSubscribedStatus)
 router.put("/updateActiveStatus" , controller.updateActiveStatus)
 router.get("/view_profile"  , controller.viewProfile)
 router.put("/updateBlockStatus"  , controller.updateBlockStatus)
+router.delete("/deleteUser"  , controller.deleteUser)
+
 
 
 

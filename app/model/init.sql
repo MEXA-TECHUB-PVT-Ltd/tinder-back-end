@@ -31,8 +31,11 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP DEFAULT NOW(),
   profile_boosted BOOLEAN,
   last_online_time TIMESTAMPTZ,
-  subscribed_status BOOLEAN
+  subscribed_status BOOLEAN,
+  verified_by_email BOOLEAN DEFAULT false
 );
+
+
 
 
 CREATE TABLE IF NOT EXISTS otpStored(
