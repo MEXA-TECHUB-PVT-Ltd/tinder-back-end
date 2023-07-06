@@ -38,7 +38,6 @@ exports.addTermsAndConditions = async(req,res)=>{
     
 }
 
-
 exports.getAllTermsAndConditions = async(req,res)=>{
     const client = await pool.connect();
     try{

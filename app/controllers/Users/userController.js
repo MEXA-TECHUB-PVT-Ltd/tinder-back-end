@@ -76,6 +76,10 @@ exports.registerWithEmail= async (req, res, next) => {
     try {
         const email = req.body.email;
         const password = req.body.password;
+        const login_type = req. body.login_type;
+
+        
+
         const { error } = registerSchema.validate(req.body);
         if (error) {
             return (
@@ -86,13 +90,20 @@ exports.registerWithEmail= async (req, res, next) => {
                 })
             )
         }
+
+        if(login_type == 'email' || login_type == 'facebook' || login_type == 'google' || login_type == 'apple'){}else{
+            return(
+                res.json({
+                    message: "login_type can be only , email , facebook , google , apple",
+                    status : false
+                })
+            )
+        }
         
 
         const found_email_query = 'SELECT * FROM users WHERE email = $1'
         const emailExists = await pool.query(found_email_query , [email])
         
-
-
         if (emailExists.rowCount>0) {
             return (
                 res.status(400).json({
@@ -108,7 +119,7 @@ exports.registerWithEmail= async (req, res, next) => {
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
 
-        const result = await pool.query(query , [email , hashPassword , false , 'email']);
+        const result = await pool.query(query , [email , hashPassword , false , login_type]);
         console.log(result.rows[0])
 
         if(result.rows[0]){
@@ -1702,6 +1713,7 @@ exports.deleteUser = async (req, res) => {
 const registerSchema = Joi.object({
     email: Joi.string().min(6).required().email(),
     password: Joi.string().min(6).required(),
+    login_type : Joi.string().required()
 
 });
 

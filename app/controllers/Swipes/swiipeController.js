@@ -5,8 +5,6 @@ const schedule = require('node-schedule');
 const fs = require('fs');
 var moment  = require('moment-timezone');
 
-
-
 exports.viewCards = async (req, res) => {
     try {
         let user_id = req.query.user_id;
@@ -28,6 +26,7 @@ exports.viewCards = async (req, res) => {
         const start_age = req.query.start_age;
         const end_age = req.query.end_age;
         const common_interest= req.query.common_interest;
+        const recently_online = req.query.recently_online;
 
         if (start_age || end_age) {
             if (start_age && end_age) {
@@ -55,7 +54,7 @@ exports.viewCards = async (req, res) => {
         let offset = (page - 1) * limit;
 
         const excludeProfileIds = await getSwipedProfileIds(user_id, 'right');
-        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender , common_interest);
+        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender , common_interest , recently_online);
         console.log(excludeProfileIds)
         if (potentialMatches) {
             res.json({
@@ -347,7 +346,7 @@ exports.getAllSuperLikedUsers = async (req, res) => {
     const client = await pool.connect();
     try {
 
-        const foundQuery = `SELECT  u.user_id , u.email, u.password,
+        const foundQuery = `SELECT  u.user_id , u.email, u.password, , u.images , u.name,
         json_agg(json_build_object(
             'swipe_direction', s.swipe_direction,
             'user_id', s.user_id,
@@ -408,16 +407,68 @@ exports.getRightSwipesOfUser = async (req, res) => {
             json_build_object(
                 'user_id', wt.user_id,
                 'name', wt.name,
-                'email' , wt.email,
+                'email', wt.email,
+                'phone_number', wt.phone_number,
+                'password', wt.password,
+                'dob', wt.dob,
+                'relation_type', wt.relation_type,
+                'school', wt.school,
+                'interest', wt.interest,
+                'job_title', wt.job_title,
+                'company', wt.company,
+                'category_id', wt.category_id,
+                'active_status', wt.active_status,
+                'gender', wt.gender,
+                'bio', wt.bio,
+                'images', wt.images,
+                'preference', wt.preference,
+                'city', wt.city,
+                'country', wt.country,
+                'longitude', wt.longitude,
+                'latitude', wt.latitude,
+                'login_type', wt.login_type,
+                'insta_id', wt.insta_id,
+                'spotify_id', wt.spotify_id,
+                'block_status', wt.block_status,
                 'created_at', wt.created_at,
-                'updated_at', wt.updated_at
+                'updated_at', wt.updated_at,
+                'profile_boosted', wt.profile_boosted,
+                'last_online_time', wt.last_online_time,
+                'subscribed_status', wt.subscribed_status,
+                'verified_by_email', wt.verified_by_email
             ) AS user_details,
             json_build_object(
                 'user_id', wtu.user_id,
                 'name', wtu.name,
-                'email' , wtu.email,
+                'email', wtu.email,
+                'phone_number', wtu.phone_number,
+                'password', wtu.password,
+                'dob', wtu.dob,
+                'relation_type', wtu.relation_type,
+                'school', wtu.school,
+                'interest', wtu.interest,
+                'job_title', wtu.job_title,
+                'company', wtu.company,
+                'category_id', wtu.category_id,
+                'active_status', wtu.active_status,
+                'gender', wtu.gender,
+                'bio', wtu.bio,
+                'images', wtu.images,
+                'preference', wtu.preference,
+                'city', wtu.city,
+                'country', wtu.country,
+                'longitude', wtu.longitude,
+                'latitude', wtu.latitude,
+                'login_type', wtu.login_type,
+                'insta_id', wtu.insta_id,
+                'spotify_id', wtu.spotify_id,
+                'block_status', wtu.block_status,
                 'created_at', wtu.created_at,
-                'updated_at', wtu.updated_at
+                'updated_at', wtu.updated_at,
+                'profile_boosted', wtu.profile_boosted,
+                'last_online_time', wtu.last_online_time,
+                'subscribed_status', wtu.subscribed_status,
+                'verified_by_email', wtu.verified_by_email
             ) AS swiped_user_details
         FROM
             swipes wtr
@@ -472,16 +523,68 @@ exports.getLeftSwipesOfUser = async (req, res) => {
             json_build_object(
                 'user_id', wt.user_id,
                 'name', wt.name,
-                'email' , wt.email,
+                'email', wt.email,
+                'phone_number', wt.phone_number,
+                'password', wt.password,
+                'dob', wt.dob,
+                'relation_type', wt.relation_type,
+                'school', wt.school,
+                'interest', wt.interest,
+                'job_title', wt.job_title,
+                'company', wt.company,
+                'category_id', wt.category_id,
+                'active_status', wt.active_status,
+                'gender', wt.gender,
+                'bio', wt.bio,
+                'images', wt.images,
+                'preference', wt.preference,
+                'city', wt.city,
+                'country', wt.country,
+                'longitude', wt.longitude,
+                'latitude', wt.latitude,
+                'login_type', wt.login_type,
+                'insta_id', wt.insta_id,
+                'spotify_id', wt.spotify_id,
+                'block_status', wt.block_status,
                 'created_at', wt.created_at,
-                'updated_at', wt.updated_at
+                'updated_at', wt.updated_at,
+                'profile_boosted', wt.profile_boosted,
+                'last_online_time', wt.last_online_time,
+                'subscribed_status', wt.subscribed_status,
+                'verified_by_email', wt.verified_by_email
             ) AS user_details,
             json_build_object(
                 'user_id', wtu.user_id,
                 'name', wtu.name,
-                'email' , wtu.email,
+                'email', wtu.email,
+                'phone_number', wtu.phone_number,
+                'password', wtu.password,
+                'dob', wtu.dob,
+                'relation_type', wtu.relation_type,
+                'school', wtu.school,
+                'interest', wtu.interest,
+                'job_title', wtu.job_title,
+                'company', wtu.company,
+                'category_id', wtu.category_id,
+                'active_status', wtu.active_status,
+                'gender', wtu.gender,
+                'bio', wtu.bio,
+                'images', wtu.images,
+                'preference', wtu.preference,
+                'city', wtu.city,
+                'country', wtu.country,
+                'longitude', wtu.longitude,
+                'latitude', wtu.latitude,
+                'login_type', wtu.login_type,
+                'insta_id', wtu.insta_id,
+                'spotify_id', wtu.spotify_id,
+                'block_status', wtu.block_status,
                 'created_at', wtu.created_at,
-                'updated_at', wtu.updated_at
+                'updated_at', wtu.updated_at,
+                'profile_boosted', wtu.profile_boosted,
+                'last_online_time', wtu.last_online_time,
+                'subscribed_status', wtu.subscribed_status,
+                'verified_by_email', wtu.verified_by_email
             ) AS swiped_user_details
         FROM
             swipes wtr
@@ -641,16 +744,68 @@ exports.getAllUserWhoLikedYou = async (req, res) => {
             json_build_object(
                 'user_id', wt.user_id,
                 'name', wt.name,
-                'email' , wt.email,
+                'email', wt.email,
+                'phone_number', wt.phone_number,
+                'password', wt.password,
+                'dob', wt.dob,
+                'relation_type', wt.relation_type,
+                'school', wt.school,
+                'interest', wt.interest,
+                'job_title', wt.job_title,
+                'company', wt.company,
+                'category_id', wt.category_id,
+                'active_status', wt.active_status,
+                'gender', wt.gender,
+                'bio', wt.bio,
+                'images', wt.images,
+                'preference', wt.preference,
+                'city', wt.city,
+                'country', wt.country,
+                'longitude', wt.longitude,
+                'latitude', wt.latitude,
+                'login_type', wt.login_type,
+                'insta_id', wt.insta_id,
+                'spotify_id', wt.spotify_id,
+                'block_status', wt.block_status,
                 'created_at', wt.created_at,
-                'updated_at', wt.updated_at
+                'updated_at', wt.updated_at,
+                'profile_boosted', wt.profile_boosted,
+                'last_online_time', wt.last_online_time,
+                'subscribed_status', wt.subscribed_status,
+                'verified_by_email', wt.verified_by_email
             ) AS user_details,
             json_build_object(
-                'user_id', wt.user_id,
-                'name', wt.name,
-                'email' , wt.email,
+                'user_id', wtu.user_id,
+                'name', wtu.name,
+                'email', wtu.email,
+                'phone_number', wtu.phone_number,
+                'password', wtu.password,
+                'dob', wtu.dob,
+                'relation_type', wtu.relation_type,
+                'school', wtu.school,
+                'interest', wtu.interest,
+                'job_title', wtu.job_title,
+                'company', wtu.company,
+                'category_id', wtu.category_id,
+                'active_status', wtu.active_status,
+                'gender', wtu.gender,
+                'bio', wtu.bio,
+                'images', wtu.images,
+                'preference', wtu.preference,
+                'city', wtu.city,
+                'country', wtu.country,
+                'longitude', wtu.longitude,
+                'latitude', wtu.latitude,
+                'login_type', wtu.login_type,
+                'insta_id', wtu.insta_id,
+                'spotify_id', wtu.spotify_id,
+                'block_status', wtu.block_status,
                 'created_at', wtu.created_at,
-                'updated_at', wtu.updated_at
+                'updated_at', wtu.updated_at,
+                'profile_boosted', wtu.profile_boosted,
+                'last_online_time', wtu.last_online_time,
+                'subscribed_status', wtu.subscribed_status,
+                'verified_by_email', wtu.verified_by_email
             ) AS swiped_user_details
         FROM
             swipes wtr
@@ -789,13 +944,13 @@ async function getSwipedProfileIds(userId, direction) {
 
 }
 
-async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance, start_age, end_age, gender, common_interest) {
+async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance, start_age, end_age, gender, common_interest , recently_online) {
     try {
 
         console.log(typeof (latitude))
         let query;
 
-        if (gender) {
+        if (gender && !recently_online) {
             query = `
         SELECT *,
         EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
@@ -809,10 +964,54 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
         AND acos(sin(radians($1)) * sin(radians(latitude))
             + cos(radians($1)) * cos(radians(latitude))
             * cos(radians($2) - radians(longitude))) * 6371 <= $5
+            
     ORDER BY profile_boosted DESC
     OFFSET $6 LIMIT $7;
 
 `;
+        }
+
+        else if(recently_online && !gender){
+            query = `
+            SELECT *,
+            EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
+            acos(sin(radians($1)) * sin(radians(latitude))
+                + cos(radians($1)) * cos(radians(latitude))
+                * cos(radians($2) - radians(longitude))) * 6371 AS distance
+        FROM users
+        WHERE user_id <> $3
+            AND user_id <> ALL($4)
+            AND acos(sin(radians($1)) * sin(radians(latitude))
+                + cos(radians($1)) * cos(radians(latitude))
+                * cos(radians($2) - radians(longitude))) * 6371 <= $5
+                AND last_online_time >= NOW() - INTERVAL '30 minutes'
+                
+        ORDER BY profile_boosted DESC
+        OFFSET $6 LIMIT $7;
+    
+    `;
+        }
+
+        else if(gender && recently_online){
+            query = `
+            SELECT *,
+            EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
+            acos(sin(radians($1)) * sin(radians(latitude))
+                + cos(radians($1)) * cos(radians(latitude))
+                * cos(radians($2) - radians(longitude))) * 6371 AS distance
+        FROM users
+        WHERE user_id <> $3
+            AND user_id <> ALL($4)
+            AND gender = $8
+            AND acos(sin(radians($1)) * sin(radians(latitude))
+                + cos(radians($1)) * cos(radians(latitude))
+                * cos(radians($2) - radians(longitude))) * 6371 <= $5
+                AND last_online_time >= NOW() - INTERVAL '30 minutes'
+                
+        ORDER BY profile_boosted DESC
+        OFFSET $6 LIMIT $7;
+    
+    `;
         }
         else{
             query = `
