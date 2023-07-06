@@ -148,8 +148,6 @@ exports.viewActivePrivacyPolicy = async(req,res)=>{
 
 exports.updatePrivacyPolicy= async(req,res)=>{
     const client = await pool.connect();
-
-    
     try{
         const privacy_policy_id = req.body.privacy_policy_id;
         const text = req.body.text;
