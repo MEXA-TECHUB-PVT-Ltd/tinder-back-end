@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const hairStylesUpload = require("../../middlewares/imageUpload")
 const {pool}= require('../../config/db.config')
 exports.uploadImage = async (req,res)=>{
