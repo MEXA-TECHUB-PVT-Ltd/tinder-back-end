@@ -44,11 +44,17 @@ exports.registerWithPh= async (req, res, next) => {
         const result = await pool.query(query , [phone_number , hashPassword , false , 'phone_number']);
         console.log(result.rows[0])
 
+        const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN);
+        console.log(token)
+
+       
+
         if(result.rows[0]){
             res.json({
                 message: "User Has been registered with phone number successfully",
                 status : true,
-                result:result.rows[0]
+                result:result.rows[0],
+                token : token ? token : null
             })
         }
         else{
@@ -120,13 +126,17 @@ exports.registerWithEmail= async (req, res, next) => {
 
 
         const result = await pool.query(query , [email , hashPassword , false , login_type]);
-        console.log(result.rows[0])
+        console.log(result.rows[0]);
+
+        const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN);
+
 
         if(result.rows[0]){
             res.json({
                 message: "User Has been registered with email successfully",
                 status : true,
-                result:result.rows[0]
+                result:result.rows[0],
+                token : token ? token : null
             })
         }
         else{
