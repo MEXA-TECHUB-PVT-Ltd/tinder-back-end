@@ -11,11 +11,11 @@ exports.registerWithPh= async (req, res, next) => {
     try {
         const phone_number = req.body.phone_number;
         const password = req.body.password;
-       
-        if(!phone_number || !password){
+        const device_id = req.body.device_id;
+        if(!phone_number || !password || !device_id){
             return(
                 res.json({
-                    message: "phone number and pasword must be provided",
+                    message: "phone number, device_id and pasword must be provided",
                     status : false
                 })
             )
@@ -37,11 +37,11 @@ exports.registerWithPh= async (req, res, next) => {
         }
 
 
-        const query = 'INSERT INTO users (phone_number , password , profile_boosted , login_type) VALUES ($1 , $2 , $3 , $4) RETURNING*'
+        const query = 'INSERT INTO users (phone_number , password , profile_boosted , login_type, device_id) VALUES ($1 , $2 , $3 , $4, $5) RETURNING*'
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
-        const result = await pool.query(query , [phone_number , hashPassword , false , 'phone_number']);
+        const result = await pool.query(query , [phone_number , hashPassword , false , 'phone_number', device_id]);
         console.log(result.rows[0])
 
         if(result.rows[0]){
@@ -76,11 +76,17 @@ exports.registerWithEmail= async (req, res, next) => {
     try {
         const email = req.body.email;
         const password = req.body.password;
-        const login_type = req. body.login_type;
-
+        const login_type = req.body.login_type;
+        const device_id = req.body.device_id;
         
 
         const { error } = registerSchema.validate(req.body);
+        if(!device_id){
+            res.json({
+                message: "Device-id is required",
+                status : false
+            })
+        }
         if (error) {
             return (
                 res.status(400).json({
@@ -91,7 +97,7 @@ exports.registerWithEmail= async (req, res, next) => {
             )
         }
 
-        if(login_type == 'email' || login_type == 'facebook' || login_type == 'google' || login_type == 'apple'){}else{
+        if( login_type == 'email' || login_type == 'facebook' || login_type == 'google' || login_type == 'apple'){}else{
             return(
                 res.json({
                     message: "login_type can be only , email , facebook , google , apple",
@@ -114,12 +120,12 @@ exports.registerWithEmail= async (req, res, next) => {
         }
 
 
-        const query = 'INSERT INTO users (email , password , profile_boosted , login_type) VALUES ($1 , $2 , $3 , $4) RETURNING*'
+        const query = 'INSERT INTO users (email , password , profile_boosted , login_type, device_id) VALUES ($1 , $2 , $3 , $4, $5) RETURNING*'
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
 
-        const result = await pool.query(query , [email , hashPassword , false , login_type]);
+        const result = await pool.query(query , [email , hashPassword , false , login_type, device_id]);
         console.log(result.rows[0])
 
         if(result.rows[0]){
@@ -138,7 +144,7 @@ exports.registerWithEmail= async (req, res, next) => {
 
     }
     catch (err) {
-        console.log(err)
+        console.log(err.message)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -154,12 +160,12 @@ exports.login_with_email = async (req, res) => {
     try {
         const email = req.body.email;
         let password = req.body.password;
-
-  
-        if (!email || !password) {
+        const device_id = req.body.device_id;
+        let updateDevice;
+        if (!email || !password || !device_id) {
             return (
                 res.status(400).json({
-                    message: "email and password must be provided",
+                    message: "email, device_id and password must be provided",
                     status: false
                 })
             )
@@ -168,7 +174,7 @@ exports.login_with_email = async (req, res) => {
         const query = 'SELECT * FROM users WHERE email = $1';
         const foundResult = await pool.query(query  , [email]);
 
-        console.log(foundResult)
+        console.log('1')
 
 
         if (foundResult.rowCount == 0) {
@@ -179,9 +185,9 @@ exports.login_with_email = async (req, res) => {
                 })
             )
         }
-
+        console.log('2')
         const vaildPass = await bcrypt.compare(password, foundResult.rows[0].password);
-
+        console.log('3')
         if (!vaildPass) {
             return (
                 res.status(401).json({
@@ -191,11 +197,34 @@ exports.login_with_email = async (req, res) => {
             )
         }
 
+        if(device_id !== foundResult.rows[0].device_id){
+
+            const changeDeviceQuery = 'UPDATE users SET device_id = $1 WHERE user_id = $2 RETURNING *'
+            updateDevice = await pool.query(changeDeviceQuery, [device_id, foundResult.rows[0].user_id]);
+
+            if(updateDevice.rowCount < 1){
+                return (
+                    res.json({
+                        message: "Device id was not updated sucessfully",
+                        status: false
+                    })
+                )
+            }
+        }
         const token = jwt.sign({ id: foundResult.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
+        if(!updateDevice){
+            return res.json({
+                message: "Logged in Successfully",
+                status: true,
+                result: foundResult.rows[0],
+                jwt_token: token
+            });
+        }
+        
         res.json({
             message: "Logged in Successfully",
             status: true,
-            result: foundResult.rows[0],
+            result: updateDevice.rows[0],
             jwt_token: token
         });
 
@@ -214,12 +243,13 @@ exports.login_with_ph = async (req, res) => {
     try {
         const phone_number = req.body.phone_number;
         let password = req.body.password;
-
+        const device_id = req.body.device_id;
+        let updateDevice;
   
-        if (!phone_number || !password) {
+        if (!phone_number || !password || !device_id) {
             return (
                 res.status(400).json({
-                    message: "phone_number and password must be provided",
+                    message: "phone_number, device_id and password must be provided",
                     status: false
                 })
             )
@@ -249,14 +279,34 @@ exports.login_with_ph = async (req, res) => {
                 })
             )
         }
-
+        if(device_id !== foundResult.rows[0].device_id){
+            const changeDeviceQuery = 'UPDATE users SET device_id = $1 WHERE user_id = $2 RETURNING *'
+            updateDevice = await pool.query(changeDeviceQuery, [device_id, foundResult.rows[0].user_id]);
+            if(!updateDevice.rows[0]){
+                return (
+                    res.json({
+                        message: "Device id was not updated sucessfully",
+                        status: false
+                    })
+                )
+            }
+        }
         const token = jwt.sign({ id: foundResult.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
+        if(!updateDevice){
+            res.json({
+                message: "Logged in Successfully",
+                status: true,
+                result: foundResult.rows[0],
+                jwt_token: token
+            });
+        }
         res.json({
             message: "Logged in Successfully",
             status: true,
-            result: foundResult.rows[0],
+            result: updateDevice.rows[0],
             jwt_token: token
         });
+        
 
     }
     catch (err) {
@@ -1713,7 +1763,7 @@ exports.deleteUser = async (req, res) => {
 const registerSchema = Joi.object({
     email: Joi.string().min(6).required().email(),
     password: Joi.string().min(6).required(),
-    login_type : Joi.string().required()
-
+    login_type : Joi.string().required(),
+    device_id: Joi.required()
 });
 

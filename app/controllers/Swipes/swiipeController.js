@@ -3,7 +3,7 @@ const { pool } = require("../../config/db.config");
 const { use } = require("../../routes/Swipes/swipeRoute");
 const schedule = require('node-schedule');
 const fs = require('fs');
-var moment  = require('moment-timezone');
+var moment = require('moment-timezone');
 
 exports.viewCards = async (req, res) => {
     try {
@@ -25,7 +25,7 @@ exports.viewCards = async (req, res) => {
         const gender = req.query.gender;
         const start_age = req.query.start_age;
         const end_age = req.query.end_age;
-        const common_interest= req.query.common_interest;
+        const common_interest = req.query.common_interest;
         const recently_online = req.query.recently_online;
 
         if (start_age || end_age) {
@@ -54,7 +54,7 @@ exports.viewCards = async (req, res) => {
         let offset = (page - 1) * limit;
 
         const excludeProfileIds = await getSwipedProfileIds(user_id, 'right');
-        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender , common_interest , recently_online);
+        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender, common_interest, recently_online);
         console.log(excludeProfileIds)
         if (potentialMatches) {
             res.json({
@@ -640,14 +640,14 @@ exports.boost = async (req, res) => {
                 const result = await pool.query(query, [false, user_id]);
                 console.log('Profile boosting time is over');
 
-                const deleteScheduledTaskQuery  = "DELETE FROM schedules_tables WHERE user_id = $1 RETURNING*";
-                const deltedResult  = await pool.query(deleteScheduledTaskQuery , [user_id]);
-                if(deltedResult.rows[0]){
+                const deleteScheduledTaskQuery = "DELETE FROM schedules_tables WHERE user_id = $1 RETURNING*";
+                const deltedResult = await pool.query(deleteScheduledTaskQuery, [user_id]);
+                if (deltedResult.rows[0]) {
                     console.log("scheduled tasks deleted successfully");
                 }
             });
 
-            let executeat = new Date(Date.now() + (1*60*1000));
+            let executeat = new Date(Date.now() + (1 * 60 * 1000));
             let start_at = new Date(Date.now());
 
             console.log(executeat)
@@ -655,10 +655,10 @@ exports.boost = async (req, res) => {
 
             const insertLogQuery = 'INSERT INTO schedules_tables (user_id , executeat , start_at) VALUES($1, $2, $3) RETURNING *';
 
-            const insertResult = await pool.query(insertLogQuery, [user_id , executeat, start_at]);
-            if(insertResult.rows[0]){
+            const insertResult = await pool.query(insertLogQuery, [user_id, executeat, start_at]);
+            if (insertResult.rows[0]) {
                 console.log("Task saved in Database");
-            }else{
+            } else {
                 console.log("Could not save task");
             }
 
@@ -840,8 +840,8 @@ exports.getAllUserWhoLikedYou = async (req, res) => {
     }
 }
 
-exports.getAllPlatformMatchesCount = async (req,res)=>{
-   try{
+exports.getAllPlatformMatchesCount = async (req, res) => {
+    try {
         const query = `SELECT COUNT(*) AS total_matches
         FROM (
           SELECT LEAST(user_id, swiped_user_id) AS user1,
@@ -854,27 +854,27 @@ exports.getAllPlatformMatchesCount = async (req,res)=>{
         `;
 
         const result = await pool.query(query);
-        if(result.rows[0]){
+        if (result.rows[0]) {
             res.json({
-                message  : "Success",
-                status : true,
-                result : result.rows[0]
+                message: "Success",
+                status: true,
+                result: result.rows[0]
             })
         }
-        else{
+        else {
             res.json({
                 message: " Could not found",
-                status : false
+                status: false
             })
         }
     }
-    catch(err){
+    catch (err) {
         res.json({
             message: "Error Occured",
-            status : false ,
-            error : err.message
+            status: false,
+            error: err.message
         })
-         }
+    }
 }
 
 async function checkForMatch(userId, swipedUserId, pool) {
@@ -944,7 +944,7 @@ async function getSwipedProfileIds(userId, direction) {
 
 }
 
-async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance, start_age, end_age, gender, common_interest , recently_online) {
+async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance, start_age, end_age, gender, common_interest, recently_online) {
     try {
 
         console.log(typeof (latitude))
@@ -961,6 +961,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
     WHERE user_id <> $3
         AND user_id <> ALL($4)
         AND gender = $8
+        AND incognito_status <> true
         AND acos(sin(radians($1)) * sin(radians(latitude))
             + cos(radians($1)) * cos(radians(latitude))
             * cos(radians($2) - radians(longitude))) * 6371 <= $5
@@ -971,7 +972,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
 `;
         }
 
-        else if(recently_online && !gender){
+        else if (recently_online && !gender) {
             query = `
             SELECT *,
             EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
@@ -981,6 +982,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
         FROM users
         WHERE user_id <> $3
             AND user_id <> ALL($4)
+            AND incognito_status <> true
             AND acos(sin(radians($1)) * sin(radians(latitude))
                 + cos(radians($1)) * cos(radians(latitude))
                 * cos(radians($2) - radians(longitude))) * 6371 <= $5
@@ -992,7 +994,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
     `;
         }
 
-        else if(gender && recently_online){
+        else if (gender && recently_online) {
             query = `
             SELECT *,
             EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
@@ -1003,6 +1005,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
         WHERE user_id <> $3
             AND user_id <> ALL($4)
             AND gender = $8
+            AND incognito_status <> true
             AND acos(sin(radians($1)) * sin(radians(latitude))
                 + cos(radians($1)) * cos(radians(latitude))
                 * cos(radians($2) - radians(longitude))) * 6371 <= $5
@@ -1013,7 +1016,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
     
     `;
         }
-        else{
+        else {
             query = `
             SELECT *,
             EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
@@ -1024,6 +1027,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
         
         WHERE user_id <> $3
             AND user_id <> ALL($4)
+            AND incognito_status <> true
             AND acos(sin(radians($1)) * sin(radians(latitude))
                 + cos(radians($1)) * cos(radians(latitude))
                 * cos(radians($2) - radians(longitude))) * 6371 <= $5
@@ -1034,60 +1038,60 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
         }
 
         let values;
-        if(gender){       
-              values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, gender];
+        if (gender) {
+            values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, gender, true];
         }
-        else{
-             values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit];
+        else {
+            values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, true];
 
         }
         const result = await pool.query(query, values);
         let array = result.rows;
 
-        if(start_age && end_age){
-            if(array){
+        if (start_age && end_age) {
+            if (array) {
                 array = array.filter(record => {
-                    if(record.age_years){
-                        if(record.age_years >=start_age && record.age_years <=end_age){
+                    if (record.age_years) {
+                        if (record.age_years >= start_age && record.age_years <= end_age) {
                             return record
                         }
                     }
                 })
-             }
+            }
         }
-         
-        if(common_interest == 'true'){
+
+        if (common_interest == 'true') {
             let interestQuery = 'SELECT * FROM users WHERE user_id = $1';
             let current_user_interest;
-            let interestResult = await pool.query(interestQuery , [userId]);
+            let interestResult = await pool.query(interestQuery, [userId]);
             console.log(interestResult.rows[0].interest)
 
-            if(interestResult){
-                if(interestResult.rows[0].interest){
+            if (interestResult) {
+                if (interestResult.rows[0].interest) {
                     current_user_interest = interestResult.rows[0].interest;
                     console.log(current_user_interest)
                 }
             }
 
-            if(current_user_interest){
-                array = array.filter(record =>{
-                    if(record.interest){
+            if (current_user_interest) {
+                array = array.filter(record => {
+                    if (record.interest) {
                         const contains = current_user_interest.some(element => {
                             return record.interest.includes(element);
-                          });
-    
-                          if(contains){
-                            return(record)
-                          }
+                        });
+
+                        if (contains) {
+                            return (record)
+                        }
                     }
                 })
             }
-            else{
+            else {
                 console.log("could not find any interest of this user")
             }
-           
+
         }
-        
+
         return array;
     }
     catch (err) {

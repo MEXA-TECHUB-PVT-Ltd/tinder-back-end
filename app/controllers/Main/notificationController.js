@@ -1,39 +1,54 @@
 const { read } = require("fs");
-const {pool} = require("../../config/db.config");
+const { pool } = require("../../config/db.config");
 const { restart } = require("nodemon");
 
-
+// SENDING NOTICATION
 exports.sendNotification = async (req, res) => {
+
+    // CONNECTING TO DATABSE
+
     const client = await pool.connect();
     try {
+
+        //DESTRUCTURING DATA FROM BODY
+
         const sender = req.body.sender;
         const receiver = req.body.receiver;
         const text = req.body.text;
         const type = req.body.type;
 
-      
-        if(!sender || !receiver || !text || !type){
-            return(
+        // CHECKING IF THE DATA IS AVAILABLE
+
+        if (!sender || !receiver || !text || !type) {
+            return (
                 res.json({
                     message: "sender , receiver ,type , and text must be provided",
-                    status : false
+                    status: false
                 })
             )
         }
-        if(type == 'liked' || type== 'superLiked' || type == 'match_found' || type == 'message_received' || type == 'user_subscribed' || type == 'user_added'){
-        }else{
-            return(
-                res.json({
-                    message : "type can be one of these : [liked, superLiked , match_found , message_received , user_subscribed , user_added]",
-                    status : false
-                })
-            )
-        }
-        
 
+        // CHECKING IF THE TYPE PROVIDED IS VALID ACCORDING TO OUR CRITERIA
+
+        if (type == 'liked' || type == 'superLiked' || type == 'match_found' || type == 'message_received' || type == 'user_subscribed' || type == 'user_added') {
+        } else {
+            return (
+                res.json({
+                    message: "type can be one of these : [liked, superLiked , match_found , message_received , user_subscribed , user_added]",
+                    status: false
+                })
+            )
+        }
+
+        // SETTING UP QUERY TO INSERT THE DATA IN NOTIFICATION DATABASE 
 
         const query = 'INSERT INTO notifications (sender , receiver , text , type) VALUES ($1 ,$2 , $3 , $4) RETURNING *';
-        const result = await pool.query(query , [sender?sender : null, receiver? receiver : null , text ? text : null ,type?type:null]);
+
+        // SENDING DATA INTO THE DATABASE BY USING QUERY ABOVE
+
+        const result = await pool.query(query, [sender ? sender : null, receiver ? receiver : null, text ? text : null, type ? type : null]);
+
+        // CHECKING THE DATA IS SAVED SUCESSFULLY THEN SENDING THE RESULTS AND TRUE STATUS
 
         if (result.rows[0]) {
             res.status(201).json({
@@ -42,6 +57,9 @@ exports.sendNotification = async (req, res) => {
                 result: result.rows[0]
             })
         }
+
+        // IF THE DATA IS NOT SAVED SENDING FALSE RESPONSE WITH MESSAGE
+
         else {
             res.status(400).json({
                 message: "Could not save",
@@ -50,7 +68,9 @@ exports.sendNotification = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+
+        // EXCEPTION HANDLING
+
         res.json({
             message: "Error",
             status: false,
@@ -59,29 +79,42 @@ exports.sendNotification = async (req, res) => {
     }
     finally {
         client.release();
-      }
+    }
 
 }
 
+// GETTING NOTIFICATION OF A SPECIFIC USER
+
 exports.getUserNotifications = async (req, res) => {
+
+    // CONNECTING TO DATABASE
+
     const client = await pool.connect();
     try {
-     const user_id = req.query.user_id;
-    
-     if(!user_id){
-        return(
-            res.json({
-                message : "user_id must be provided",
-                status : false
-            })
-        )
-     }
+
+        // DESTRUCTURING DTA FROM THE REQUEST BODY
+
+        const user_id = req.query.user_id;
+
+        // CHECKING IF THE DATA IS AVAILABLE
+
+        if (!user_id) {
+            return (
+                res.json({
+                    message: "user_id must be provided",
+                    status: false
+                })
+            )
+        }
+
+        // SETTING UP FETCH DATA FROM THE DATABASE OF THE SPECIFIC USER
 
         const query = `SELECT json_agg(
             json_build_object(
                 'notification_id', n.notification_id,
                 'sender', json_build_object(
                     'user_id', u.user_id,
+                    'device_id', u.device_id,
                     'name', u.name,
                     'email', u.email,
                     'phone_number', u.phone_number,
@@ -107,6 +140,7 @@ exports.getUserNotifications = async (req, res) => {
                 'receiver' ,  json_build_object(
                     'user_id', us.user_id,
                     'name', us.name,
+                    'device_id', us.device_id,
                     'email', us.email,
                     'phone_number', us.phone_number,
                     'password', us.password,
@@ -142,10 +176,13 @@ exports.getUserNotifications = async (req, res) => {
 
         WHERE n.receiver = $1
         
- ;
- 
-                        `;
-        const result = await pool.query(query , [user_id]);
+ ; `;
+
+        // FETECHING DATA FROM THE DATABASE USING THE QUERY ABOVE
+        
+        const result = await pool.query(query, [user_id]);
+        console.log(result.rows);
+        // CHECKING IF THE DATA IS FETCHED SUCESSFULLT FROM THE DATABASE THEN SENDING THE RESULTS TO THE RESPONSE
 
         if (result.rows) {
             res.status(201).json({
@@ -154,6 +191,9 @@ exports.getUserNotifications = async (req, res) => {
                 result: result.rows[0].json_agg
             })
         }
+
+        // IF THE DATA IS NOT FETCHED THE SENING FALSE STATUS TO RESPONSE
+        
         else {
             res.status(400).json({
                 message: "Could not save",
@@ -162,7 +202,9 @@ exports.getUserNotifications = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
+        // EXCEPTION HANDLING 
+
         res.json({
             message: "Error",
             status: false,
@@ -171,48 +213,81 @@ exports.getUserNotifications = async (req, res) => {
     }
     finally {
         client.release();
-      }
+    }
 
 }
 
-exports.readNotification = async (req,res)=>{
-    try{
+// SETTING UP NOTIFICATION MARKED AS READ
+
+exports.readNotification = async (req, res) => {
+    try {
+
+        // DESTRUCTURING NOTIFICATION ID FROM REQUEST QUERY
+
         const notificaiton_id = req.query.notificaiton_id;
 
-        if(!notificaiton_id){
+        // CHECKING IF THE NOTIFICATION ID IS AVAILABLE
+
+        if (!notificaiton_id) {
             return (
                 res.json({
                     message: "Please Provide notificaiton_id",
-                    status : false
+                    status: false
                 })
             )
         }
+
+        // SETTING UP THE QUERY TO SET THE NOTIFICATION AS READ
 
         const query = 'UPDATE notifications SET read = $1 WHERE notification_id = $2 RETURNING*';
-        const result = await pool.query(query , [true , notificaiton_id]);
 
-        if(result.rows[0]){
-            res.json({
-                message: "Notification is marked as read",
-                status : true,
-                result : result.rows[0]
+        // CHANGING THE NOFITICATION READ STATUS TO TRUE IN DATABASE USING ABOVE QUERY
+
+        const result = await pool.query(query, [true, notificaiton_id]);
+
+        // CHECKING IF THE CHANGES HAS BEEN MADE THEN SENDING RESPONSE AS STATUS TRUE
+        console.log(result.rows[0])
+        if (!result.rows[0]) {
+            return res.json({
+                message: "Notification was not marked as read",
+                status: false,
+
             })
-        }  
-        else{
-            return(
-                res.json({
-                    message: "Notification could not be marked as read due to some reason",
-                    status : false
-                })
-            )
         }
+        // CHECKING IF THE CHANGES ARE NOT MADE THEN SENDING RESPONSE AS FALSE
+
+        const getSendersDataQuery = 'SELECT * FROM users WHERE user_id = $1'
+        const getSenderData = await pool.query(getSendersDataQuery, [result.rows[0].sender]);
+        if(!getSenderData.rows[0]){
+            return res.json({
+                message: "Sender Data was not fetched",
+                status: false,
+
+            })
+        }
+        const getRecieversDataQuery = 'SELECT * FROM users WHERE user_id = $1'
+        const getRecieverData = await pool.query(getRecieversDataQuery, [result.rows[0].receiver]);
+        if(!getRecieverData.rows[0]){
+            return res.json({
+                message: "Reciever Data was not fetched",
+                status: false,
+
+            })
+        }
+        result.rows[0].sender = getSenderData.rows[0];
+        result.rows[0].receiver = getRecieverData.rows[0];
+        res.json({
+            status:true,
+            message:'Notification marked as read',
+            results: result.rows[0]
+        })
     }
-    catch(err){
-        return(
+    catch (err) {
+        return (
             res.json({
                 message: "Error Occurred",
-                status : false,
-                error : err.message
+                status: false,
+                error: err.message
             })
         )
     }

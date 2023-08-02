@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS users (
   profile_boosted BOOLEAN,
   last_online_time TIMESTAMPTZ,
   subscribed_status BOOLEAN,
-  verified_by_email BOOLEAN DEFAULT false
+  verified_by_email BOOLEAN DEFAULT false,
+  incognito_status BOOLEAN DEFAULT false
 );
 
 
