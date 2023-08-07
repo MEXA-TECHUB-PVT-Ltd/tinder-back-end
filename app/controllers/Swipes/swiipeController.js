@@ -55,16 +55,16 @@ exports.viewCards = async (req, res) => {
 
         const excludeProfileIds = await getSwipedProfileIds(user_id, 'right');
         const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender, common_interest, recently_online);
-        console.log(excludeProfileIds)
+        console.log('potentialMatches',)
         if (potentialMatches) {
-            res.json({
+            return res.json({
                 message: "Fetched Successfully",
                 status: true,
                 potentialMatches: potentialMatches
             })
         }
         else {
-            res.json({
+            return res.json({
                 message: "Could not fetch",
                 status: false
             })
@@ -1039,12 +1039,14 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
 
         let values;
         if (gender) {
-            values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, gender, true];
+            console.log('in if')
+            values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, gender];
         }
         else {
-            values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, true];
+            values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit];
 
         }
+        console.log(query)
         const result = await pool.query(query, values);
         let array = result.rows;
 

@@ -82,7 +82,7 @@ exports.registerWithEmail= async (req, res, next) => {
 
         const { error } = registerSchema.validate(req.body);
         if(!device_id){
-            res.json({
+            return res.json({
                 message: "Device-id is required",
                 status : false
             })
@@ -162,6 +162,7 @@ exports.login_with_email = async (req, res) => {
         let password = req.body.password;
         const device_id = req.body.device_id;
         let updateDevice;
+        console.log(email,password)
         if (!email || !password || !device_id) {
             return (
                 res.status(400).json({
@@ -185,9 +186,9 @@ exports.login_with_email = async (req, res) => {
                 })
             )
         }
-        console.log('2')
+        console.log("foundResult.rows[0].password ",foundResult.rows)
         const vaildPass = await bcrypt.compare(password, foundResult.rows[0].password);
-        console.log('3')
+        console.log(vaildPass)
         if (!vaildPass) {
             return (
                 res.status(401).json({
@@ -796,6 +797,7 @@ exports.getAllUsers = async (req, res) => {
                     'city', u.city,
                     'country', u.country,
                     'bio', u.bio,
+                    'incognito_status',u.incognito_status,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
