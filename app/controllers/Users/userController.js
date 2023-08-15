@@ -1,33 +1,33 @@
 
-const {pool}  = require("../../config/db.config");
+const { pool } = require("../../config/db.config");
 
 const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 
 
-exports.registerWithPh= async (req, res, next) => {
+exports.registerWithPh = async (req, res, next) => {
     const client = await pool.connect();
     try {
         const phone_number = req.body.phone_number;
         const password = req.body.password;
-       
-        if(!phone_number || !password){
-            return(
+        const device_id = req.body.device_id;
+        if (!phone_number || !password || !device_id) {
+            return (
                 res.json({
-                    message: "phone number and pasword must be provided",
-                    status : false
+                    message: "phone number, device_id and pasword must be provided",
+                    status: false
                 })
             )
         }
-        
+
 
         const found_ph_query = 'SELECT * FROM users WHERE phone_number = $1'
-        const ph_no_Exists = await pool.query(found_ph_query , [phone_number])
-        
+        const ph_no_Exists = await pool.query(found_ph_query, [phone_number])
 
 
-        if (ph_no_Exists.rowCount>0) {
+
+        if (ph_no_Exists.rowCount > 0) {
             return (
                 res.status(400).json({
                     message: "user with this phone_number already exists",
@@ -37,32 +37,25 @@ exports.registerWithPh= async (req, res, next) => {
         }
 
 
-        const query = 'INSERT INTO users (phone_number , password , profile_boosted , login_type) VALUES ($1 , $2 , $3 , $4) RETURNING*'
+        const query = 'INSERT INTO users (phone_number , password , profile_boosted , login_type, device_id) VALUES ($1 , $2 , $3 , $4, $5) RETURNING*'
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
-
-        const result = await pool.query(query , [phone_number , hashPassword , false , 'phone_number']);
-        console.log(result.rows[0])
-
-        const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN);
-        console.log(token)
-
-       
-
-        if(result.rows[0]){
-            res.json({
-                message: "User Has been registered with phone number successfully",
-                status : true,
-                result:result.rows[0],
-                token : token ? token : null
-            })
+        const result = await pool.query(query, [phone_number, hashPassword, false, 'phone_number', device_id]);
+        if (result.rowCount < 1) {
+            return res.json({
+                message: "Error while signing up",
+                status: false,
+            });
         }
-        else{
-            res.json({
-                message: "Could not Register user",
-                status :false,
-            })
-        }
+        
+        const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
+        res.json({
+            message: "Signed up Successfully",
+            status: true,
+            result: result.rows[0],
+            jwt_token: token
+        })
+
 
     }
     catch (err) {
@@ -72,21 +65,27 @@ exports.registerWithPh= async (req, res, next) => {
             status: false,
             error: err.message
         })
-    }finally {
+    } finally {
         client.release();
-      }
+    }
 }
 
-exports.registerWithEmail= async (req, res, next) => {
+exports.registerWithEmail = async (req, res, next) => {
     const client = await pool.connect();
     try {
         const email = req.body.email;
         const password = req.body.password;
-        const login_type = req. body.login_type;
+        const login_type = req.body.login_type;
+        const device_id = req.body.device_id;
 
-        
 
         const { error } = registerSchema.validate(req.body);
+        if (!device_id) {
+            return res.json({
+                message: "Device-id is required",
+                status: false
+            })
+        }
         if (error) {
             return (
                 res.status(400).json({
@@ -97,20 +96,20 @@ exports.registerWithEmail= async (req, res, next) => {
             )
         }
 
-        if(login_type == 'email' || login_type == 'facebook' || login_type == 'google' || login_type == 'apple'){}else{
-            return(
+        if (login_type == 'email' || login_type == 'facebook' || login_type == 'google' || login_type == 'apple') { } else {
+            return (
                 res.json({
                     message: "login_type can be only , email , facebook , google , apple",
-                    status : false
+                    status: false
                 })
             )
         }
-        
+
 
         const found_email_query = 'SELECT * FROM users WHERE email = $1'
-        const emailExists = await pool.query(found_email_query , [email])
-        
-        if (emailExists.rowCount>0) {
+        const emailExists = await pool.query(found_email_query, [email])
+
+        if (emailExists.rowCount > 0) {
             return (
                 res.status(400).json({
                     message: "user with this email already exists",
@@ -120,43 +119,37 @@ exports.registerWithEmail= async (req, res, next) => {
         }
 
 
-        const query = 'INSERT INTO users (email , password , profile_boosted , login_type) VALUES ($1 , $2 , $3 , $4) RETURNING*'
+        const query = 'INSERT INTO users (email , password , profile_boosted , login_type, device_id) VALUES ($1 , $2 , $3 , $4, $5) RETURNING*'
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
-
-        const result = await pool.query(query , [email , hashPassword , false , login_type]);
-        console.log(result.rows[0]);
-
-        const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN);
-
-
-        if(result.rows[0]){
-            res.json({
-                message: "User Has been registered with email successfully",
-                status : true,
-                result:result.rows[0],
-                token : token ? token : null
-            })
+        const result = await pool.query(query, [email, hashPassword, false, login_type, device_id]);
+        if (result.rowCount < 1) {
+            return res.json({
+                message: "Error while signing up",
+                status: false,
+            });
         }
-        else{
-            res.json({
-                message: "Could not Register user",
-                status :false,
-            })
-        }
+        
+        const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
+        res.json({
+            message: "Signed up Successfully",
+            status: true,
+            result: result.rows[0],
+            jwt_token: token
+        })
 
     }
     catch (err) {
-        console.log(err)
+        console.log(err.message)
         res.json({
             message: "Error Occurred",
             status: false,
             error: err.message
         })
-    }finally {
+    } finally {
         client.release();
-      }
+    }
 
 }
 
@@ -164,21 +157,22 @@ exports.login_with_email = async (req, res) => {
     try {
         const email = req.body.email;
         let password = req.body.password;
-
-  
-        if (!email || !password) {
+        const device_id = req.body.device_id;
+        let updateDevice;
+        console.log(email, password)
+        if (!email || !password || !device_id) {
             return (
                 res.status(400).json({
-                    message: "email and password must be provided",
+                    message: "email, device_id and password must be provided",
                     status: false
                 })
             )
         }
 
         const query = 'SELECT * FROM users WHERE email = $1';
-        const foundResult = await pool.query(query  , [email]);
+        const foundResult = await pool.query(query, [email]);
 
-        console.log(foundResult)
+        console.log('1')
 
 
         if (foundResult.rowCount == 0) {
@@ -189,9 +183,9 @@ exports.login_with_email = async (req, res) => {
                 })
             )
         }
-
+        console.log("foundResult.rows[0].password ", foundResult.rows)
         const vaildPass = await bcrypt.compare(password, foundResult.rows[0].password);
-
+        console.log(vaildPass)
         if (!vaildPass) {
             return (
                 res.status(401).json({
@@ -201,11 +195,34 @@ exports.login_with_email = async (req, res) => {
             )
         }
 
+        if (device_id !== foundResult.rows[0].device_id) {
+
+            const changeDeviceQuery = 'UPDATE users SET device_id = $1 WHERE user_id = $2 RETURNING *'
+            updateDevice = await pool.query(changeDeviceQuery, [device_id, foundResult.rows[0].user_id]);
+
+            if (updateDevice.rowCount < 1) {
+                return (
+                    res.json({
+                        message: "Device id was not updated sucessfully",
+                        status: false
+                    })
+                )
+            }
+        }
         const token = jwt.sign({ id: foundResult.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
+        if (!updateDevice) {
+            return res.json({
+                message: "Logged in Successfully",
+                status: true,
+                result: foundResult.rows[0],
+                jwt_token: token
+            });
+        }
+
         res.json({
             message: "Logged in Successfully",
             status: true,
-            result: foundResult.rows[0],
+            result: updateDevice.rows[0],
             jwt_token: token
         });
 
@@ -224,19 +241,20 @@ exports.login_with_ph = async (req, res) => {
     try {
         const phone_number = req.body.phone_number;
         let password = req.body.password;
+        const device_id = req.body.device_id;
+        let updateDevice;
 
-  
-        if (!phone_number || !password) {
+        if (!phone_number || !password || !device_id) {
             return (
                 res.status(400).json({
-                    message: "phone_number and password must be provided",
+                    message: "phone_number, device_id and password must be provided",
                     status: false
                 })
             )
         }
 
         const query = 'SELECT * FROM users WHERE phone_number = $1';
-        const foundResult = await pool.query(query  , [phone_number]);
+        const foundResult = await pool.query(query, [phone_number]);
 
         console.log(foundResult)
 
@@ -259,14 +277,34 @@ exports.login_with_ph = async (req, res) => {
                 })
             )
         }
-
+        if (device_id !== foundResult.rows[0].device_id) {
+            const changeDeviceQuery = 'UPDATE users SET device_id = $1 WHERE user_id = $2 RETURNING *'
+            updateDevice = await pool.query(changeDeviceQuery, [device_id, foundResult.rows[0].user_id]);
+            if (!updateDevice.rows[0]) {
+                return (
+                    res.json({
+                        message: "Device id was not updated sucessfully",
+                        status: false
+                    })
+                )
+            }
+        }
         const token = jwt.sign({ id: foundResult.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
+        if (!updateDevice) {
+            res.json({
+                message: "Logged in Successfully",
+                status: true,
+                result: foundResult.rows[0],
+                jwt_token: token
+            });
+        }
         res.json({
             message: "Logged in Successfully",
             status: true,
-            result: foundResult.rows[0],
+            result: updateDevice.rows[0],
             jwt_token: token
         });
+
 
     }
     catch (err) {
@@ -279,27 +317,27 @@ exports.login_with_ph = async (req, res) => {
     }
 }
 
-exports.updateProfile= async (req,res)=>{
-    try{
+exports.updateProfile = async (req, res) => {
+    try {
         const user_id = req.body.user_id;
 
-         if(!user_id){
-            return(res.json({message : "Please provide user_id" , status : false}))
-         }
+        if (!user_id) {
+            return (res.json({ message: "Please provide user_id", status: false }))
+        }
 
-        const name= req.body.name;
-        const email = req.body.email ;
-        const phone_number = req.body.phone_number ;
-        const password = req.body.password ;
+        const name = req.body.name;
+        const email = req.body.email;
+        const phone_number = req.body.phone_number;
+        const password = req.body.password;
         const dob = req.body.dob;
         const relation_type = req.body.relation_type;
         const school = req.body.school;
-        const interest = req.body.interest ;
+        const interest = req.body.interest;
         const job_title = req.body.job_title;
         const company = req.body.company;
         const category_id = req.body.category_id;
-        const active_status = req.body.active_status ;
-        const gender = req.body.gender ;
+        const active_status = req.body.active_status;
+        const gender = req.body.gender;
         const images = req.body.images;
         const preference = req.body.preference;
         const insta_id = req.body.insta_id;
@@ -315,195 +353,196 @@ exports.updateProfile= async (req,res)=>{
 
 
 
-        if(images){
-            if(images.length >6 || images.length < 2){
-                return(
+        if (images) {
+            if (images.length > 6 || images.length < 2) {
+                return (
                     res.json({
                         message: "Images can not be greater than 6 or less than 2 ",
-                        status : false,
+                        status: false,
                     })
                 )
             }
         }
-       
+
 
 
         //filtering and modifying
         longitude = parseFloat(longitude);
         latitude = parseFloat(latitude);
 
-        if(gender)
-        {if(gender== 'male' || gender== 'female' || gender == 'prefer_not_to_say'){}else{
+        if (gender) {
+            if (gender == 'male' || gender == 'female' || gender == 'prefer_not_to_say') { } else {
+                res.json({
+                    message: "gender should only be male , femal , prefer_not_to_say",
+                    status: false
+                })
+            }
+        }
+
+
+        let query = 'UPDATE users SET ';
+        let index = 2;
+        let values = [user_id];
+
+        if (name) {
+            query += `name = $${index} , `;
+            values.push(name)
+            index++
+        }
+        if (email) {
+            query += `email = $${index} , `;
+            values.push(email)
+            index++
+        }
+        if (phone_number) {
+            query += `phone_number = $${index} , `;
+            values.push(phone_number)
+            index++
+        }
+
+
+        if (password) {
+            query += `password = $${index} , `;
+            values.push(password)
+            index++
+        }
+        if (dob) {
+            query += `dob = $${index} , `;
+            values.push(dob)
+            index++
+        }
+
+        if (relation_type) {
+            query += `relation_type = $${index} , `;
+            values.push(relation_type)
+            index++
+        }
+
+        if (school) {
+            query += `school = $${index} , `;
+            values.push(school)
+            index++
+        }
+
+
+        if (interest) {
+            query += `interest = $${index} , `;
+            values.push(interest)
+            index++
+        }
+
+
+        if (job_title) {
+            query += `job_title = $${index} , `;
+            values.push(job_title)
+            index++
+        }
+
+        if (company) {
+            query += `company = $${index} , `;
+            values.push(company)
+            index++
+        }
+
+        if (category_id) {
+            query += `category_id = $${index} , `;
+            values.push(category_id)
+            index++
+        }
+
+        if (active_status) {
+            query += `active_status = $${index} , `;
+            values.push(active_status)
+            index++
+        }
+
+
+        if (gender) {
+            query += `gender = $${index} , `;
+            values.push(gender)
+            index++
+        }
+
+        if (images) {
+            query += `images = $${index} , `;
+            values.push(images)
+            index++
+        }
+        if (preference) {
+            query += `preference = $${index} , `;
+            values.push(preference)
+            index++
+        }
+        if (insta_id) {
+            query += `insta_id = $${index} , `;
+            values.push(insta_id)
+            index++
+        }
+        if (spotify_id) {
+            query += `spotify_id = $${index} , `;
+            values.push(spotify_id)
+            index++
+        }
+
+        if (longitude) {
+            query += `longitude = $${index} , `;
+            values.push(longitude)
+            index++
+        }
+
+        if (latitude) {
+            query += `latitude = $${index} , `;
+            values.push(latitude)
+            index++
+        }
+
+        if (city) {
+            query += `city = $${index} , `;
+            values.push(city)
+            index++
+        }
+
+        if (country) {
+            query += `country = $${index} , `;
+            values.push(country)
+            index++
+        }
+
+        if (bio) {
+            query += `bio = $${index} , `;
+            values.push(bio)
+            index++
+        }
+
+        if (verified_by_email) {
+            query += `verified_by_email = $${index} , `;
+            values.push(verified_by_email)
+            index++
+        }
+
+
+        query += 'WHERE user_id = $1 RETURNING*'
+        query = query.replace(/,\s+WHERE/g, " WHERE");
+        console.log(query);
+
+
+
+        const result = await pool.query(query, values);
+
+        if (result.rows[0]) {
             res.json({
-                message: "gender should only be male , femal , prefer_not_to_say",
-                status:false
+                message: "Profile Updated successfully",
+                status: true,
+                result: result.rows[0]
             })
-        }}
+        }
+        else {
+            res.json({
+                message: "Profile could not be updated successfully",
+                status: false,
+            })
+        }
 
-
-    let query = 'UPDATE users SET ';
-    let index = 2;
-    let values =[user_id];
-
-    if(name){
-        query+= `name = $${index} , `;
-        values.push(name)
-        index ++
-    }
-    if(email){
-        query+= `email = $${index} , `;
-        values.push(email)
-        index ++
-    }
-    if(phone_number){
-        query+= `phone_number = $${index} , `;
-        values.push(phone_number)
-        index ++
-    }
-
-
-    if(password){
-        query+= `password = $${index} , `;
-        values.push(password)
-        index ++
-    }
-    if(dob){
-        query+= `dob = $${index} , `;
-        values.push(dob)
-        index ++
-    }
-
-    if(relation_type){
-        query+= `relation_type = $${index} , `;
-        values.push(relation_type)
-        index ++
-    }
-
-    if(school){
-        query+= `school = $${index} , `;
-        values.push(school)
-        index ++
-    }
-
-
-    if(interest){
-        query+= `interest = $${index} , `;
-        values.push(interest)
-        index ++
-    }
-
-
-    if(job_title){
-        query+= `job_title = $${index} , `;
-        values.push(job_title)
-        index ++
-    }
-
-    if(company){
-        query+= `company = $${index} , `;
-        values.push(company)
-        index ++
-    }
-
-    if(category_id){
-        query+= `category_id = $${index} , `;
-        values.push(category_id)
-        index ++
-    }
-
-    if(active_status){
-        query+= `active_status = $${index} , `;
-        values.push(active_status)
-        index ++
-    }
-
-
-    if(gender){
-        query+= `gender = $${index} , `;
-        values.push(gender)
-        index ++
-    }
-
-    if(images){
-        query+= `images = $${index} , `;
-        values.push(images)
-        index ++
-    }
-    if(preference){
-        query+= `preference = $${index} , `;
-        values.push(preference)
-        index ++
-    }
-    if(insta_id){
-        query+= `insta_id = $${index} , `;
-        values.push(insta_id)
-        index ++
-    }
-    if(spotify_id){
-        query+= `spotify_id = $${index} , `;
-        values.push(spotify_id)
-        index ++
-    }
-
-    if(longitude){
-        query+= `longitude = $${index} , `;
-        values.push(longitude)
-        index ++
-    }
-
-    if(latitude){
-        query+= `latitude = $${index} , `;
-        values.push(latitude)
-        index ++
-    }
-
-    if(city){
-        query+= `city = $${index} , `;
-        values.push(city)
-        index ++
-    }
-
-    if(country){
-        query+= `country = $${index} , `;
-        values.push(country)
-        index ++
-    }
-
-    if(bio){
-        query+= `bio = $${index} , `;
-        values.push(bio)
-        index ++
-    }
-
-    if(verified_by_email){
-        query+= `verified_by_email = $${index} , `;
-        values.push(verified_by_email)
-        index ++
-    }
-
-
-    query += 'WHERE user_id = $1 RETURNING*'
-    query = query.replace(/,\s+WHERE/g, " WHERE");
-    console.log(query);
-
-      
-
-      const result = await pool.query(query , values);
-
-      if(result.rows[0]){
-        res.json({
-            message: "Profile Updated successfully",
-            status : true ,
-            result : result.rows[0]
-        })
-      }
-      else{
-        res.json({
-            message: "Profile could not be updated successfully",
-            status : false,
-        })
-      }
-      
     }
     catch (err) {
         console.log(err)
@@ -515,59 +554,59 @@ exports.updateProfile= async (req,res)=>{
     }
 }
 
-exports.updatePassword = async(req,res)=>{
-    try{
-        const email = req.body.email ;
+exports.updatePassword = async (req, res) => {
+    try {
+        const email = req.body.email;
         const phone_number = req.body.phone_number;
         const password = req.body.password;
 
-        if(email && phone_number){
-            return(res.json({
-                message : "only one can be provided email or phone_number",
-                status :false
+        if (email && phone_number) {
+            return (res.json({
+                message: "only one can be provided email or phone_number",
+                status: false
             }))
         }
 
-        if(email){
+        if (email) {
             const foundQuery = 'SELECT * FROM users WHERE email = $1 and login_type = $2';
-            const foundResult = await pool.query(foundQuery , [email , 'email']);
+            const foundResult = await pool.query(foundQuery, [email, 'email']);
 
-        if(foundResult.rows[0]){
-            const query = 'UPDATE users SET password = $1 WHERE email = $2 RETURNING*';
-            const salt = await bcrypt.genSalt(10);
-            const hashPassword = await bcrypt.hash(password, salt);
-    
-            const result = await pool.query(query , [hashPassword , email]);
-    
-            if(result.rows[0]){
-                res.json({message: "Update successfully" , status :true , result : result.rows[0]})
-            }
-            else{
-                res.json({message: "Could not Update" , status : false })
+            if (foundResult.rows[0]) {
+                const query = 'UPDATE users SET password = $1 WHERE email = $2 RETURNING*';
+                const salt = await bcrypt.genSalt(10);
+                const hashPassword = await bcrypt.hash(password, salt);
+
+                const result = await pool.query(query, [hashPassword, email]);
+
+                if (result.rows[0]) {
+                    res.json({ message: "Update successfully", status: true, result: result.rows[0] })
+                }
+                else {
+                    res.json({ message: "Could not Update", status: false })
+                }
             }
         }
-        }
-        if(phone_number){
+        if (phone_number) {
             const foundQuery = 'SELECT * FROM users WHERE phone_number = $1 and login_type = $2';
-            const foundResult = await pool.query(foundQuery , [email , 'phone_number']);
+            const foundResult = await pool.query(foundQuery, [email, 'phone_number']);
 
 
-            if(foundResult.rows[0]){
+            if (foundResult.rows[0]) {
                 const query = 'UPDATE users SET password = $1 WHERE phone_number = $2 RETURNING*';
                 const salt = await bcrypt.genSalt(10);
                 const hashPassword = await bcrypt.hash(password, salt);
-                const result = await pool.query(query , [hashPassword , email]);
-        
-                if(result.rows[0]){
-                    res.json({message: "Update successfully" , status :true , result : result.rows[0]})
+                const result = await pool.query(query, [hashPassword, email]);
+
+                if (result.rows[0]) {
+                    res.json({ message: "Update successfully", status: true, result: result.rows[0] })
                 }
-                else{
-                    res.json({message: "Could not Update" , status : false })
+                else {
+                    res.json({ message: "Could not Update", status: false })
                 }
             }
         }
 
-       
+
     }
     catch (err) {
         console.log(err)
@@ -579,15 +618,15 @@ exports.updatePassword = async(req,res)=>{
     }
 }
 
-exports.viewProfile = async(req,res)=>{
-    try{
+exports.viewProfile = async (req, res) => {
+    try {
         const user_id = req.query.user_id;
-        if(!user_id){
-            return(res.json({message : "Please provide user_id" , status : false}))
-         }
+        if (!user_id) {
+            return (res.json({ message: "Please provide user_id", status: false }))
+        }
 
 
-         const query = `SELECT json_agg(
+        const query = `SELECT json_agg(
             json_build_object(
                 'user_id', u.user_id,
                 'name', u.name,
@@ -669,23 +708,23 @@ exports.viewProfile = async(req,res)=>{
         LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
         LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
         WHERE u.user_id = $1`;
-         const result = await pool.query(query , [user_id]);
+        const result = await pool.query(query, [user_id]);
 
 
-         if(result.rowCount>0){
+        if (result.rowCount > 0) {
             res.json({
                 message: "User profile fetched",
-                status : true,
-                result : result.rows[0]
+                status: true,
+                result: result.rows[0]
             })
-         }
-         else{
+        }
+        else {
             res.json({
                 message: "Could not Fetch profile , may be the user_id is wrong",
-                status : false
+                status: false
             })
-         }
-        
+        }
+
     }
     catch (err) {
         console.log(err)
@@ -713,6 +752,7 @@ exports.getAllUsers = async (req, res) => {
                     'email', u.email,
                     'phone_number', u.phone_number,
                     'password', u.password,
+                    'device_id', u.device_id,
                     'dob', u.dob,
                     'block_status' , u.block_status,
                     'verified_by_email' , u.verified_by_email,
@@ -756,6 +796,7 @@ exports.getAllUsers = async (req, res) => {
                     'city', u.city,
                     'country', u.country,
                     'bio', u.bio,
+                    'incognito_status',u.incognito_status,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -787,12 +828,12 @@ exports.getAllUsers = async (req, res) => {
             LEFT OUTER JOIN school sch ON u.school = sch.school_id
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id`
-           result = await pool.query(query);
+            result = await pool.query(query);
         }
 
-        if(page && limit){
+        if (page && limit) {
             limit = parseInt(limit);
-            let offset= (parseInt(page)-1)* limit;
+            let offset = (parseInt(page) - 1) * limit;
 
             const query = `
             SELECT json_agg(
@@ -801,6 +842,8 @@ exports.getAllUsers = async (req, res) => {
                     'name', u.name,
                     'email', u.email,
                     'phone_number', u.phone_number,
+                    'incognito_status',u.incognito_status,
+                    'device_id',u.device_id,
                     'password', u.password,
                     'dob', u.dob,
                     'block_status' , u.block_status,
@@ -877,9 +920,9 @@ exports.getAllUsers = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LIMIT $1 OFFSET $2`;
-            result = await pool.query(query , [limit , offset]);
-        }   
-      
+            result = await pool.query(query, [limit, offset]);
+        }
+
         if (result.rows) {
             res.json({
                 message: "Fetched",
@@ -904,23 +947,23 @@ exports.getAllUsers = async (req, res) => {
     }
     finally {
         client.release();
-      }
+    }
 
 }
 
-exports.usersByPreference = async(req,res)=>{
-    try{
+exports.usersByPreference = async (req, res) => {
+    try {
         const preference_id = req.query.preference_id;
-        if(!preference_id){
-            return(res.json({message : "Please provide preference_id" , status : false}))
-         }
-         let limit = req.query.limit;
-         let page = req.query.page
- 
-         let result;
- 
-         if (!page || !limit) {
-             const query = `SELECT json_agg(
+        if (!preference_id) {
+            return (res.json({ message: "Please provide preference_id", status: false }))
+        }
+        let limit = req.query.limit;
+        let page = req.query.page
+
+        let result;
+
+        if (!page || !limit) {
+            const query = `SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
@@ -987,14 +1030,14 @@ exports.usersByPreference = async(req,res)=>{
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
              WHERE u.preference = $1`
-            result = await pool.query(query , [preference_id]);
-         }
- 
-         if(page && limit){
-             limit = parseInt(limit);
-             let offset= (parseInt(page)-1)* limit;
- 
-             const query = `SELECT json_agg(
+            result = await pool.query(query, [preference_id]);
+        }
+
+        if (page && limit) {
+            limit = parseInt(limit);
+            let offset = (parseInt(page) - 1) * limit;
+
+            const query = `SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
@@ -1061,24 +1104,24 @@ exports.usersByPreference = async(req,res)=>{
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
              WHERE u.preference = $3 LIMIT $1 OFFSET $2`
-             result = await pool.query(query , [limit , offset , preference_id]);
-         }   
-       
-         if (result.rows) {
-             res.json({
-                 message: "Fetched",
-                 status: true,
-                 users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
-                 result: result.rows[0].json_agg
-             })
-         }
-         else {
-             res.json({
-                 message: "could not fetch",
-                 status: false
-             })
-         }
-        
+            result = await pool.query(query, [limit, offset, preference_id]);
+        }
+
+        if (result.rows) {
+            res.json({
+                message: "Fetched",
+                status: true,
+                users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
+                result: result.rows[0].json_agg
+            })
+        }
+        else {
+            res.json({
+                message: "could not fetch",
+                status: false
+            })
+        }
+
     }
     catch (err) {
         console.log(err)
@@ -1090,20 +1133,20 @@ exports.usersByPreference = async(req,res)=>{
     }
 }
 
-exports.usersByCategory = async(req,res)=>{
-    try{
+exports.usersByCategory = async (req, res) => {
+    try {
         const category_id = req.query.category_id;
-        if(!category_id){
-            return(res.json({message : "Please provide category_id" , status : false}))
-         }
+        if (!category_id) {
+            return (res.json({ message: "Please provide category_id", status: false }))
+        }
 
-         let limit = req.query.limit;
-         let page = req.query.page
- 
-         let result;
- 
-         if (!page || !limit) {
-             const query = `SELECT json_agg(
+        let limit = req.query.limit;
+        let page = req.query.page
+
+        let result;
+
+        if (!page || !limit) {
+            const query = `SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
@@ -1170,14 +1213,14 @@ exports.usersByCategory = async(req,res)=>{
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
              WHERE u.category_id = $1`
-            result = await pool.query(query , [category_id]);
-         }
- 
-         if(page && limit){
-             limit = parseInt(limit);
-             let offset= (parseInt(page)-1)* limit;
- 
-             const query = `SELECT json_agg(
+            result = await pool.query(query, [category_id]);
+        }
+
+        if (page && limit) {
+            limit = parseInt(limit);
+            let offset = (parseInt(page) - 1) * limit;
+
+            const query = `SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
@@ -1244,24 +1287,24 @@ exports.usersByCategory = async(req,res)=>{
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
              WHERE u.category_id = $3 LIMIT $1 OFFSET $2`
-             result = await pool.query(query , [limit , offset , category_id]);
-         }   
-       
-         if (result.rows) {
-             res.json({
-                 message: "Fetched",
-                 status: true,
-                 users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
-                 result: result.rows[0].json_agg
-             })
-         }
-         else {
-             res.json({
-                 message: "could not fetch",
-                 status: false
-             })
-         }
-        
+            result = await pool.query(query, [limit, offset, category_id]);
+        }
+
+        if (result.rows) {
+            res.json({
+                message: "Fetched",
+                status: true,
+                users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
+                result: result.rows[0].json_agg
+            })
+        }
+        else {
+            res.json({
+                message: "could not fetch",
+                status: false
+            })
+        }
+
     }
     catch (err) {
         console.log(err)
@@ -1273,20 +1316,20 @@ exports.usersByCategory = async(req,res)=>{
     }
 }
 
-exports.usersByInterest = async(req,res)=>{
-    try{
+exports.usersByInterest = async (req, res) => {
+    try {
         const interest = req.query.interest;
-        if(!interest){
-            return(res.json({message : "Please provide interest" , status : false}))
-         }
+        if (!interest) {
+            return (res.json({ message: "Please provide interest", status: false }))
+        }
 
-         let limit = req.query.limit;
-         let page = req.query.page
- 
-         let result;
- 
-         if (!page || !limit) {
-             const query = `SELECT json_agg(
+        let limit = req.query.limit;
+        let page = req.query.page
+
+        let result;
+
+        if (!page || !limit) {
+            const query = `SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
@@ -1353,14 +1396,14 @@ exports.usersByInterest = async(req,res)=>{
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
              WHERE $1 IN (SELECT unnest(u.interest))`
-            result = await pool.query(query , [interest]);
-         }
- 
-         if(page && limit){
-             limit = parseInt(limit);
-             let offset= (parseInt(page)-1)* limit;
- 
-             const query = `SELECT json_agg(
+            result = await pool.query(query, [interest]);
+        }
+
+        if (page && limit) {
+            limit = parseInt(limit);
+            let offset = (parseInt(page) - 1) * limit;
+
+            const query = `SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
@@ -1427,24 +1470,24 @@ exports.usersByInterest = async(req,res)=>{
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id 
             WHERE $3 IN (SELECT unnest(u.interest)) LIMIT $1 OFFSET $2`
-             result = await pool.query(query , [limit , offset , interest]);
-         }   
-       
-         if (result.rows) {
-             res.json({
-                 message: "Fetched",
-                 status: true,
-                 users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
-                 result: result.rows[0].json_agg
-             })
-         }
-         else {
-             res.json({
-                 message: "could not fetch",
-                 status: false
-             })
-         }
-        
+            result = await pool.query(query, [limit, offset, interest]);
+        }
+
+        if (result.rows) {
+            res.json({
+                message: "Fetched",
+                status: true,
+                users_counts: result.rows[0].json_agg ? result.rows[0].json_agg.length : 0,
+                result: result.rows[0].json_agg
+            })
+        }
+        else {
+            res.json({
+                message: "could not fetch",
+                status: false
+            })
+        }
+
     }
     catch (err) {
         console.log(err)
@@ -1456,42 +1499,42 @@ exports.usersByInterest = async(req,res)=>{
     }
 }
 
-exports.getAllSubscribedUsers = async(req,res)=>{
-    try{
-   
-         let limit = req.query.limit;
-         let page = req.query.page
- 
-         let result;
- 
-         if (!page || !limit) {
-             const query = 'SELECT * FROM users WHERE subscribed_status = $1'
-            result = await pool.query(query , [true]);
-         }
- 
-         if(page && limit){
-             limit = parseInt(limit);
-             let offset= (parseInt(page)-1)* limit;
- 
-             const query = 'SELECT * FROM users WHERE subscribed_status = $3 LIMIT $1 OFFSET $2'
-             result = await pool.query(query , [limit , offset , true]);
-         }   
-       
-         if (result.rows) {
-             res.json({
-                 message: "Fetched",
-                 status: true,
-                 users_counts: result.rows.length,
-                 result: result.rows
-             })
-         }
-         else {
-             res.json({
-                 message: "could not fetch",
-                 status: false
-             })
-         }
-        
+exports.getAllSubscribedUsers = async (req, res) => {
+    try {
+
+        let limit = req.query.limit;
+        let page = req.query.page
+
+        let result;
+
+        if (!page || !limit) {
+            const query = 'SELECT * FROM users WHERE subscribed_status = $1'
+            result = await pool.query(query, [true]);
+        }
+
+        if (page && limit) {
+            limit = parseInt(limit);
+            let offset = (parseInt(page) - 1) * limit;
+
+            const query = 'SELECT * FROM users WHERE subscribed_status = $3 LIMIT $1 OFFSET $2'
+            result = await pool.query(query, [limit, offset, true]);
+        }
+
+        if (result.rows) {
+            res.json({
+                message: "Fetched",
+                status: true,
+                users_counts: result.rows.length,
+                result: result.rows
+            })
+        }
+        else {
+            res.json({
+                message: "could not fetch",
+                status: false
+            })
+        }
+
     }
     catch (err) {
         console.log(err)
@@ -1503,34 +1546,34 @@ exports.getAllSubscribedUsers = async(req,res)=>{
     }
 }
 
-exports.updateSubscribedStatus = async(req,res)=>{
-    try{
+exports.updateSubscribedStatus = async (req, res) => {
+    try {
         const user_id = req.query.user_id;
         const subscribed_status = req.query.subscribed_status;
-   if(!user_id || !subscribed_status){
-    return(
-        res.json({
-            message: "user id , subscribed_status must be provided",
-            status : false
-        })
-    )
-   }
-        const query= 'UPDATE users SET subscribed_status = $1 WHERE user_id = $2 RETURNING*'
-        const result = await pool.query(query , [subscribed_status,user_id])
-         if (result.rows[0]) {
-             res.json({
-                 message: "Updated",
-                 status: true,
-                 result: result.rows[0]
-             })
-         }
-         else {
-             res.json({
-                 message: "could not updated",
-                 status: false
-             })
-         }
-        
+        if (!user_id || !subscribed_status) {
+            return (
+                res.json({
+                    message: "user id , subscribed_status must be provided",
+                    status: false
+                })
+            )
+        }
+        const query = 'UPDATE users SET subscribed_status = $1 WHERE user_id = $2 RETURNING*'
+        const result = await pool.query(query, [subscribed_status, user_id])
+        if (result.rows[0]) {
+            res.json({
+                message: "Updated",
+                status: true,
+                result: result.rows[0]
+            })
+        }
+        else {
+            res.json({
+                message: "could not updated",
+                status: false
+            })
+        }
+
     }
     catch (err) {
         console.log(err)
@@ -1542,70 +1585,70 @@ exports.updateSubscribedStatus = async(req,res)=>{
     }
 }
 
-exports.updateActiveStatus = async(req,res)=>{
-    try{
+exports.updateActiveStatus = async (req, res) => {
+    try {
         const user_id = req.query.user_id;
         const active_status = req.query.active_status;
         last_online_time = null;
-        if(!user_id || !active_status){
-        return(
+        if (!user_id || !active_status) {
+            return (
+                res.json({
+                    message: "user id , active_status must be provided",
+                    status: false
+                })
+            )
+        }
+
+
+        if (active_status == "false") {
+            const date = new Date(Date.now());
+            const utcString = date.toISOString();
+            last_online_time = utcString
+        }
+
+
+
+        let query = 'UPDATE users SET ';
+        let index = 2;
+        let values = [user_id];
+
+
+        if (active_status) {
+            query += `active_status = $${index} , `;
+            values.push(active_status)
+            index++
+        }
+
+
+        if (last_online_time) {
+            query += `last_online_time = $${index} , `;
+            values.push(last_online_time)
+            index++
+        }
+
+        query += 'WHERE user_id = $1 RETURNING*'
+        query = query.replace(/,\s+WHERE/g, " WHERE");
+        console.log(query);
+
+
+
+        const result = await pool.query(query, values);
+
+
+        if (result.rows[0]) {
             res.json({
-            message: "user id , active_status must be provided",
-            status : false
-        })
-    )
-   }
+                message: "Acive status updated",
+                status: true,
+                result: result.rows[0]
+            })
+        }
+        else {
+            res.json({
+                message: "could not update active status",
+                status: false
+            })
+        }
 
-
-   if(active_status == "false"){
-    const date = new Date(Date.now());
-        const utcString = date.toISOString();
-        last_online_time =utcString
-   }
-
-   
-
-   let query = 'UPDATE users SET ';
-   let index = 2;
-   let values =[user_id];
-
-
-   if(active_status){
-    query+= `active_status = $${index} , `;
-    values.push(active_status)
-    index ++
-}
-
-
-if(last_online_time){
-    query+= `last_online_time = $${index} , `;
-    values.push(last_online_time)
-    index ++
-}
-
-   query += 'WHERE user_id = $1 RETURNING*'
-   query = query.replace(/,\s+WHERE/g, " WHERE");
-   console.log(query);
-
-     
-
-     const result = await pool.query(query , values);
-
-
-         if (result.rows[0]) {
-             res.json({
-                 message: "Acive status updated",
-                 status: true,
-                 result: result.rows[0]
-             })
-         }
-         else {
-             res.json({
-                 message: "could not update active status",
-                 status: false
-             })
-         }
-        
     }
     catch (err) {
         console.log(err)
@@ -1617,55 +1660,55 @@ if(last_online_time){
     }
 }
 
-exports.updateBlockStatus = async(req,res)=>{
-    try{
+exports.updateBlockStatus = async (req, res) => {
+    try {
         const user_id = req.query.user_id;
         const block_status = req.query.block_status;
 
-        if(!user_id || !block_status){
-        return(
+        if (!user_id || !block_status) {
+            return (
+                res.json({
+                    message: "user id , block_status must be provided",
+                    status: false
+                })
+            )
+        }
+
+
+        let query = 'UPDATE users SET ';
+        let index = 2;
+        let values = [user_id];
+
+
+        if (block_status) {
+            query += `block_status = $${index} , `;
+            values.push(block_status)
+            index++
+        }
+
+        query += 'WHERE user_id = $1 RETURNING*'
+        query = query.replace(/,\s+WHERE/g, " WHERE");
+        console.log(query);
+
+
+
+        const result = await pool.query(query, values);
+
+
+        if (result.rows[0]) {
             res.json({
-            message: "user id , block_status must be provided",
-            status : false
-        })
-    )
-   }
+                message: "block_status updated",
+                status: true,
+                result: result.rows[0]
+            })
+        }
+        else {
+            res.json({
+                message: "could not update block_status",
+                status: false
+            })
+        }
 
-
-   let query = 'UPDATE users SET ';
-   let index = 2;
-   let values =[user_id];
-
-
-   if(block_status){
-    query+= `block_status = $${index} , `;
-    values.push(block_status)
-    index ++
-}
-
-   query += 'WHERE user_id = $1 RETURNING*'
-   query = query.replace(/,\s+WHERE/g, " WHERE");
-   console.log(query);
-
-     
-
-     const result = await pool.query(query , values);
-
-
-         if (result.rows[0]) {
-             res.json({
-                 message: "block_status updated",
-                 status: true,
-                 result: result.rows[0]
-             })
-         }
-         else {
-             res.json({
-                 message: "could not update block_status",
-                 status: false
-             })
-         }
-        
     }
     catch (err) {
         console.log(err)
@@ -1691,16 +1734,16 @@ exports.deleteUser = async (req, res) => {
         }
 
         const query = 'DELETE FROM users WHERE user_id = $1 RETURNING *';
-        const result = await pool.query(query , [user_id]);
+        const result = await pool.query(query, [user_id]);
 
-        if(result.rowCount>0){
+        if (result.rowCount > 0) {
             res.status(200).json({
                 message: "Deletion successfull",
                 status: true,
                 deletedRecord: result.rows[0]
             })
         }
-        else{
+        else {
             res.status(404).json({
                 message: "Could not delete . Record With this Id may not found or req.body may be empty",
                 status: false,
@@ -1717,13 +1760,13 @@ exports.deleteUser = async (req, res) => {
     }
     finally {
         client.release();
-      }
+    }
 }
 
 const registerSchema = Joi.object({
     email: Joi.string().min(6).required().email(),
     password: Joi.string().min(6).required(),
-    login_type : Joi.string().required()
-
+    login_type: Joi.string().required(),
+    device_id: Joi.required()
 });
 

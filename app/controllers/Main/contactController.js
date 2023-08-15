@@ -2,12 +2,16 @@ const { pool } = require("../../config/db.config");
 const format = require('pg-format');
 
 
-
+// IMPORT CONTACTS 
 exports.importContacts = async (req, res) => {
     try {
+
+        // DESTRUCTURING DATA FROM REQUEST BODY
+
         let user_id = req.body.user_id;
         const contacts = req.body.contacts;
 
+        // CHECKING IF DATA IS RECIEVED
 
         if(!user_id){
             return(
@@ -18,28 +22,40 @@ exports.importContacts = async (req, res) => {
             )
         }
 
+        // PERFORMING A LOOP TO CHECK EACH ELEMENT OF ARRAY OF CONTACTS
         for (let i = 0; i < contacts.length; i++) {
             let element = contacts[i];
+
+            // SORTING THE USER ID IN EACH ELEMENT OF ARRAY AS USER ID
 
             if(element){
                 element.user_id = user_id
             }
         }
 
-            for (let i = 0; i < contacts.length; i++) {
-            let element = contacts[i];
-            if(element){
-                if(!element.contact_name || !element.phone_number){
-                    return(
-                        res.json({
-                            message: "The Input of contact array must be in valid format , Each record must have contact_name and phone_number",
-                            status : false
-                        })
-                    )
-                }
+        // PERFORMING A LOP CHECK TO SEE IF EACH ELEMENT OF ARRAY HAS EITHER CONTACT NAME OR CONTACT PHONE NUMBER
+        
+        for (let i = 0; i < contacts.length; i++) {
+        let element = contacts[i];
+
+        // CHECKING IF THE ELEMENET IS NOT EMPTY
+
+        if(element){
+
+            // CHECKING IF THE ELEMENET HAS EITHER CONTACT NAME OR CONTACT PHONE NUMBER
+
+            if(!element.contact_name || !element.phone_number){
+                return(
+                    res.json({
+                        message: "The Input of contact array must be in valid format , Each record must have contact_name and phone_number",
+                        status : false
+                    })
+                )
             }
         }
-    
+        }
+        
+        // IF ALL CHECKS ARE PASSED THEN WE WILL SOROE USER_ID, CONTACT_NAME AND PHONE NUMBER IN VALUES TO MAKE AN ARRAY PO
         const values = contacts.map(contact => [contact.user_id, contact.contact_name, contact.phone_number]);
         console.log(values)
 

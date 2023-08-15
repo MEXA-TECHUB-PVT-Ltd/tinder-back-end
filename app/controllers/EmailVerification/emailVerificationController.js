@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
 exports.sendEmail = async (req, res) => {
     const client = await pool.connect();
 
-    
+
     try {
         const email = req.body.email;
 
@@ -36,11 +36,11 @@ exports.sendEmail = async (req, res) => {
                 sendOTPVerificationEmail(foundResult.rows[0].email, res)
             }
             else {
-                    res.json({
-                        message: "This email is not Registered with this app , please add valid email",
-                        status: false
-                    })
-            
+                res.json({
+                    message: "This email is not Registered with this app , please add valid email",
+                    status: false
+                })
+
             }
 
         }
@@ -53,45 +53,45 @@ exports.sendEmail = async (req, res) => {
         })
     }
 
-finally {
-    client.release();
-  }
+    finally {
+        client.release();
+    }
 }
 
-exports.verifyOTP = async (req,res)=>{
+exports.verifyOTP = async (req, res) => {
     const client = await pool.connect();
-    try{
+    try {
         const email = req.body.email;
         const otp = req.body.otp;
 
         const found_email_query = 'SELECT * FROM otpStored WHERE email = $1 AND otp = $2'
-        const result = await pool.query(found_email_query, [email , otp])
+        const result = await pool.query(found_email_query, [email, otp])
 
-        if(result.rowCount>0){
+        if (result.rowCount > 0) {
             res.json({
                 message: "OTP verified",
                 status: true,
                 result: result.rows[0]
             })
         }
-        else{
+        else {
             res.json({
-                message : "Verification Rejected",
-                status:false
+                message: "Verification Rejected",
+                status: false
             })
         }
     }
-    catch(err){
+    catch (err) {
         console.log(err)
         res.status(500).json({
-          message: `Internal server error occurred`,
-          success:false,
+            message: `Internal server error occurred`,
+            success: false,
         });
-      }
+    }
 
-finally {
-    client.release();
-  }
+    finally {
+        client.release();
+    }
 }
 
 
@@ -101,13 +101,13 @@ const sendOTPVerificationEmail = async (email, res) => {
         const otp = `${Math.floor(1000 + Math.random() * 9000)}`
         console.log(otp)
 
-        
+
         const found_email_query = 'SELECT * FROM otpStored WHERE email = $1'
         const foundStoredOtp = await pool.query(found_email_query, [email])
         console.log(foundStoredOtp)
 
 
-        if (foundStoredOtp.rowCount ==0) {
+        if (foundStoredOtp.rowCount == 0) {
             const query = 'INSERT INTO otpStored (email , otp) VALUES ($1 , $2) RETURNING*'
             result = await pool.query(query, [email, otp])
             result = result.rows[0]
@@ -119,12 +119,12 @@ const sendOTPVerificationEmail = async (email, res) => {
                 otp ? otp : null,
                 email ? email : null
             ]
-            result = await pool.query(query , values);
+            result = await pool.query(query, values);
             console.log(result)
             result = result.rows[0]
         }
 
-        
+
         let sendEmailResponse = await transporter.sendMail({
             from: process.env.EMAIL_USERNAME,
             to: email,

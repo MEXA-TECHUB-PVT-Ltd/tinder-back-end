@@ -3,9 +3,6 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const {pool} = require("../../config/db.config");
 
-
-
-
 exports.registerAdmin =async (req,res,next)=>{
     const client = await pool.connect();
 
