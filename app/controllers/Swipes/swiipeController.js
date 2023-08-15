@@ -193,13 +193,12 @@ exports.getAllMatches = async (req, res) => {
                 })
             )
         }
-
         let user_details;
         const query = 'SELECT * FROM users WHERE user_id = $1'
         const foundResult = await pool.query(query, [user_id]);
-        if (foundResult.rows) {
+
+        if (foundResult.rowCount > 0) {
             if (foundResult.rows[0]) {
-                console.log("inside")
                 user_details = foundResult.rows[0]
             }
         } else {
@@ -212,10 +211,9 @@ exports.getAllMatches = async (req, res) => {
 
         }
 
-
-        console.log(user_id);
         const result = await getMatches(user_id);
         if (result) {
+            console.log(user_details)
             user_details.matches = result
         }
 
@@ -921,7 +919,6 @@ async function getMatches(userId) {
         )
       `, [userId]);
 
-        console.log(result)
         return result.rows;
     } catch (err) {
         throw err;
