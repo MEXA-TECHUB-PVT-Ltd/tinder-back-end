@@ -688,18 +688,10 @@ exports.viewProfile = async (req, res) => {
                 ),
                 'match_count', (
                     SELECT COUNT(*)
-                    FROM users mu
-                    WHERE mu.user_id IN (
-                        SELECT swiped_user_id
-                        FROM swipes
-                        WHERE user_id = u.user_id AND swipe_direction = 'right'
-                            AND swiped_user_id IN (
-                                SELECT user_id
-                                FROM swipes
-                                WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
-                            )
-                    )
+                    FROM swipes
+                    WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
                 )
+                        
                 )
         ) 
         FROM users u
@@ -711,19 +703,42 @@ exports.viewProfile = async (req, res) => {
         const result = await pool.query(query, [user_id]);
 
 
-        if (result.rowCount > 0) {
-            res.json({
+        if (result.rowCount < 1) {
+            return res.json({
+                message: "Could not Fetch profile , may be the user_id is wrong",
+                status: false
+            })
+
+        }
+        const getUserProfiles = `SELECT * FROM swipes WHERE swiped_user_id = $1`;
+        const result1 = await pool.query(getUserProfiles, [user_id]);
+        if (result.rowCount < 1) {
+            return res.json({
                 message: "User profile fetched",
                 status: true,
                 result: result.rows[0]
             })
+
         }
-        else {
-            res.json({
-                message: "Could not Fetch profile , may be the user_id is wrong",
-                status: false
+
+        const match_user_id = result1.rows.map(user => user.user_id)
+
+        const getUserData = `SELECT * FROM users WHERE user_id = ANY($1::int[]);`
+        const results2 = await pool.query(getUserData, [match_user_id])
+        if (results2.rowCount < 1) {
+            return res.json({
+                message: "User profile fetched",
+                status: true,
+                result: result.rows[0]
             })
+
         }
+        result.rows[0].userSwipedRight = results2.rows;
+        res.json({
+            message: "User profile fetched",
+            status: true,
+            result: result.rows[0]
+        })
 
     }
     catch (err) {
@@ -742,7 +757,7 @@ exports.getAllUsers = async (req, res) => {
         let limit = req.query.limit;
         let page = req.query.page
 
-        let result;
+        let tempResult;
 
         if (!page || !limit) {
             const query = `  SELECT json_agg(
@@ -809,17 +824,8 @@ exports.getAllUsers = async (req, res) => {
                     ),
                     'match_count', (
                         SELECT COUNT(*)
-                        FROM users mu
-                        WHERE mu.user_id IN (
-                            SELECT swiped_user_id
-                            FROM swipes
-                            WHERE user_id = u.user_id AND swipe_direction = 'right'
-                                AND swiped_user_id IN (
-                                    SELECT user_id
-                                    FROM swipes
-                                    WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
-                                )
-                        )
+                        FROM swipes
+                        WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
                     )
                 )
             )
@@ -828,7 +834,7 @@ exports.getAllUsers = async (req, res) => {
             LEFT OUTER JOIN school sch ON u.school = sch.school_id
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id`
-            result = await pool.query(query);
+            tempResult = await pool.query(query);
         }
 
         if (page && limit) {
@@ -900,17 +906,8 @@ exports.getAllUsers = async (req, res) => {
                     ),
                     'match_count', (
                         SELECT COUNT(*)
-                        FROM users mu
-                        WHERE mu.user_id IN (
-                            SELECT swiped_user_id
-                            FROM swipes
-                            WHERE user_id = u.user_id AND swipe_direction = 'right'
-                                AND swiped_user_id IN (
-                                    SELECT user_id
-                                    FROM swipes
-                                    WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
-                                )
-                        )
+                        FROM swipes
+                        WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
                     )
                 )
             )
@@ -920,23 +917,51 @@ exports.getAllUsers = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LIMIT $1 OFFSET $2`;
-            result = await pool.query(query, [limit, offset]);
+            tempResult = await pool.query(query, [limit, offset]);
         }
 
-        if (result.rows) {
-            res.json({
-                message: "Fetched",
-                status: true,
-                users_counts: result.rows[0].json_agg.length,
-                result: result.rows[0].json_agg
-            })
-        }
-        else {
-            res.json({
+        if (tempResult.rowCount < 1) {
+            return res.json({
                 message: "could not fetch",
                 status: false
             })
+
         }
+        let result = tempResult.rows[0].json_agg
+        await Promise.all(
+            
+            result.map(async (user, index) => {
+                
+                if (user.match_count > 0) {
+                    
+                    const findUserIds = `SELECT * FROM swipes WHERE swiped_user_id = $1 AND swipe_direction = 'right'`
+                    const getFindUserIds = await pool.query(findUserIds, [user.user_id])
+                    if (getFindUserIds.rowCount > 0) {
+                        const ids = getFindUserIds.rows.map(user => user.user_id)
+                        const getUserDataWhoSwiped = `SELECT * FROM users WHERE user_id = ANY($1::int[]);`
+                        const getDataForUserDataWhoSwiped = await pool.query(getUserDataWhoSwiped, [ids])
+                        
+                        if (getDataForUserDataWhoSwiped.rowCount > 0) {
+                            result[index].userSwipedRight = getDataForUserDataWhoSwiped.rows;
+                            
+                        }
+                        else {
+                            result[index].userSwipedRight = []
+                        }
+                        
+                    }
+                    console.log(result)
+                }
+
+            })
+        )
+        console.log(result)
+        res.json({
+            message: "Fetched",
+            status: true,
+            users_counts: result.length,
+            result: result
+        })
     }
     catch (err) {
         res.json({
