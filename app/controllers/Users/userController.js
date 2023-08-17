@@ -745,14 +745,16 @@ exports.getAllUsers = async (req, res) => {
         let result;
 
         if (!page || !limit) {
-            const query = `  SELECT json_agg(
+            const query = `
+            SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
                     'email', u.email,
                     'phone_number', u.phone_number,
+                    'incognito_status',u.incognito_status,
+                    'device_id',u.device_id,
                     'password', u.password,
-                    'device_id', u.device_id,
                     'dob', u.dob,
                     'block_status' , u.block_status,
                     'verified_by_email' , u.verified_by_email,
@@ -796,7 +798,6 @@ exports.getAllUsers = async (req, res) => {
                     'city', u.city,
                     'country', u.country,
                     'bio', u.bio,
-                    'incognito_status',u.incognito_status,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -809,17 +810,8 @@ exports.getAllUsers = async (req, res) => {
                     ),
                     'match_count', (
                         SELECT COUNT(*)
-                        FROM users mu
-                        WHERE mu.user_id IN (
-                            SELECT swiped_user_id
-                            FROM swipes
-                            WHERE user_id = u.user_id AND swipe_direction = 'right'
-                                AND swiped_user_id IN (
-                                    SELECT user_id
-                                    FROM swipes
-                                    WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
-                                )
-                        )
+                        FROM swipes
+                        WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
                     )
                 )
             )
@@ -830,7 +822,7 @@ exports.getAllUsers = async (req, res) => {
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id`
             result = await pool.query(query);
         }
-
+        
         if (page && limit) {
             limit = parseInt(limit);
             let offset = (parseInt(page) - 1) * limit;
@@ -900,17 +892,8 @@ exports.getAllUsers = async (req, res) => {
                     ),
                     'match_count', (
                         SELECT COUNT(*)
-                        FROM users mu
-                        WHERE mu.user_id IN (
-                            SELECT swiped_user_id
-                            FROM swipes
-                            WHERE user_id = u.user_id AND swipe_direction = 'right'
-                                AND swiped_user_id IN (
-                                    SELECT user_id
-                                    FROM swipes
-                                    WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
-                                )
-                        )
+                        FROM swipes
+                        WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
                     )
                 )
             )
@@ -922,7 +905,9 @@ exports.getAllUsers = async (req, res) => {
             LIMIT $1 OFFSET $2`;
             result = await pool.query(query, [limit, offset]);
         }
-
+        const query1 = `SELECT * FROM swipes WHERE swiped_user_id = $1 AND swipe_direction = 'right'`
+        const result1 = await pool.query(query1, [101044]);
+        console.log(result1.rows.length)
         if (result.rows) {
             res.json({
                 message: "Fetched",
