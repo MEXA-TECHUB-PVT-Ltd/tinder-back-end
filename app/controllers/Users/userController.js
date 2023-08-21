@@ -40,7 +40,6 @@ exports.registerWithPh = async (req, res, next) => {
         const query = 'INSERT INTO users (phone_number , password , profile_boosted , login_type, device_id) VALUES ($1 , $2 , $3 , $4, $5) RETURNING*'
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
-
         const result = await pool.query(query, [phone_number, hashPassword, false, 'phone_number', device_id]);
         if (result.rowCount < 1) {
             return res.json({
@@ -48,6 +47,7 @@ exports.registerWithPh = async (req, res, next) => {
                 status: false,
             });
         }
+        
         const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
         res.json({
             message: "Signed up Successfully",
@@ -123,7 +123,6 @@ exports.registerWithEmail = async (req, res, next) => {
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
-
         const result = await pool.query(query, [email, hashPassword, false, login_type, device_id]);
         if (result.rowCount < 1) {
             return res.json({
@@ -131,6 +130,7 @@ exports.registerWithEmail = async (req, res, next) => {
                 status: false,
             });
         }
+        
         const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
         res.json({
             message: "Signed up Successfully",
@@ -760,14 +760,16 @@ exports.getAllUsers = async (req, res) => {
         let tempResult;
 
         if (!page || !limit) {
-            const query = `  SELECT json_agg(
+            const query = `
+            SELECT json_agg(
                 json_build_object(
                     'user_id', u.user_id,
                     'name', u.name,
                     'email', u.email,
                     'phone_number', u.phone_number,
+                    'incognito_status',u.incognito_status,
+                    'device_id',u.device_id,
                     'password', u.password,
-                    'device_id', u.device_id,
                     'dob', u.dob,
                     'block_status' , u.block_status,
                     'verified_by_email' , u.verified_by_email,
@@ -811,7 +813,6 @@ exports.getAllUsers = async (req, res) => {
                     'city', u.city,
                     'country', u.country,
                     'bio', u.bio,
-                    'incognito_status',u.incognito_status,
                     'login_type', u.login_type,
                     'created_at', u.created_at,
                     'updated_at', u.updated_at,
@@ -836,7 +837,7 @@ exports.getAllUsers = async (req, res) => {
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id`
             tempResult = await pool.query(query);
         }
-
+        
         if (page && limit) {
             limit = parseInt(limit);
             let offset = (parseInt(page) - 1) * limit;
@@ -919,8 +920,7 @@ exports.getAllUsers = async (req, res) => {
             LIMIT $1 OFFSET $2`;
             tempResult = await pool.query(query, [limit, offset]);
         }
-
-        if (tempResult.rowCount < 1) {
+         if (tempResult.rowCount < 1) {
             return res.json({
                 message: "could not fetch",
                 status: false
