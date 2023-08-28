@@ -650,7 +650,6 @@ exports.boost = async (req, res) => {
             let executeat = new Date(Date.now() + (1*60*1000));
             let start_at = new Date(Date.now());
 
-            console.log(executeat)
             // Save the scheduled job details to the DB,
 
             const insertLogQuery = 'INSERT INTO schedules_tables (user_id , executeat , start_at) VALUES($1, $2, $3) RETURNING *';
@@ -699,10 +698,16 @@ exports.boost = async (req, res) => {
 
 exports.getAllBoostedProfiles = async (req, res) => {
     const client = await pool.connect();
-
+    const {user_id} = req.query;
     try {
-        const query = 'SELECT * FROM users WHERE profile_boosted = $1';
-        const result = await pool.query(query, [true]);
+        if(!user_id){
+            return res.json({
+                message: "User_id is required",
+                status: false,
+            })
+        }
+        const query = 'SELECT * FROM users WHERE profile_boosted = $1 AND user_id != $2 AND incognito_status = $3';
+        const result = await pool.query(query, [true, user_id, false]);
 
         if (result.rows.length > 0) {
             res.json({
@@ -999,19 +1004,19 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
             acos(sin(radians($1)) * sin(radians(latitude))
                 + cos(radians($1)) * cos(radians(latitude))
                 * cos(radians($2) - radians(longitude))) * 6371 AS distance
-        FROM users
-        WHERE user_id <> $3
-            AND user_id <> ALL($4)
-            AND gender = $8
-            AND acos(sin(radians($1)) * sin(radians(latitude))
-                + cos(radians($1)) * cos(radians(latitude))
-                * cos(radians($2) - radians(longitude))) * 6371 <= $5
-                AND last_online_time >= NOW() - INTERVAL '30 minutes'
+                FROM users
+                WHERE user_id <> $3
+                    AND user_id <> ALL($4)
+                    AND gender = $8
+                    AND acos(sin(radians($1)) * sin(radians(latitude))
+                        + cos(radians($1)) * cos(radians(latitude))
+                        * cos(radians($2) - radians(longitude))) * 6371 <= $5
+                        AND last_online_time >= NOW() - INTERVAL '30 minutes'
                 
-        ORDER BY profile_boosted DESC
-        OFFSET $6 LIMIT $7;
+                ORDER BY profile_boosted DESC
+                OFFSET $6 LIMIT $7;
     
-    `;
+            `;
         }
         else{
             query = `

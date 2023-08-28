@@ -6,7 +6,7 @@ const fs = require('fs');
 const schedule = require('node-schedule');
 
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const bodyParser = require('body-parser');
 require('dotenv').config()
 const auth = require('./app/middlewares/auth')
