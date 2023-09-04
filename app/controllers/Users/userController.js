@@ -59,7 +59,7 @@ exports.registerWithPh = async (req, res, next) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -141,7 +141,7 @@ exports.registerWithEmail = async (req, res, next) => {
 
     }
     catch (err) {
-        console.log(err.message)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -159,7 +159,6 @@ exports.login_with_email = async (req, res) => {
         let password = req.body.password;
         const device_id = req.body.device_id;
         let updateDevice;
-        console.log(email, password)
         if (!email || !password || !device_id) {
             return (
                 res.status(400).json({
@@ -172,9 +171,6 @@ exports.login_with_email = async (req, res) => {
         const query = 'SELECT * FROM users WHERE email = $1';
         const foundResult = await pool.query(query, [email]);
 
-        console.log('1')
-
-
         if (foundResult.rowCount == 0) {
             return (
                 res.status(400).json({
@@ -183,9 +179,7 @@ exports.login_with_email = async (req, res) => {
                 })
             )
         }
-        console.log("foundResult.rows[0].password ", foundResult.rows)
         const vaildPass = await bcrypt.compare(password, foundResult.rows[0].password);
-        console.log(vaildPass)
         if (!vaildPass) {
             return (
                 res.status(401).json({
@@ -228,7 +222,7 @@ exports.login_with_email = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -255,8 +249,6 @@ exports.login_with_ph = async (req, res) => {
 
         const query = 'SELECT * FROM users WHERE phone_number = $1';
         const foundResult = await pool.query(query, [phone_number]);
-
-        console.log(foundResult)
 
         if (foundResult.rowCount == 0) {
             return (
@@ -308,7 +300,7 @@ exports.login_with_ph = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -523,7 +515,6 @@ exports.updateProfile = async (req, res) => {
 
         query += 'WHERE user_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
-        console.log(query);
 
 
 
@@ -545,7 +536,7 @@ exports.updateProfile = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -609,7 +600,7 @@ exports.updatePassword = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -727,7 +718,7 @@ exports.viewProfile = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -907,7 +898,6 @@ exports.getAllUsers = async (req, res) => {
         }
         const query1 = `SELECT * FROM swipes WHERE swiped_user_id = $1 AND swipe_direction = 'right'`
         const result1 = await pool.query(query1, [101044]);
-        console.log(result1.rows.length)
         if (result.rows) {
             res.json({
                 message: "Fetched",
@@ -1225,7 +1215,7 @@ exports.usersByPreference = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1408,7 +1398,7 @@ exports.usersByCategory = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1591,7 +1581,7 @@ exports.usersByInterest = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1638,7 +1628,7 @@ exports.getAllSubscribedUsers = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1677,7 +1667,7 @@ exports.updateSubscribedStatus = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1729,7 +1719,6 @@ exports.updateActiveStatus = async (req, res) => {
 
         query += 'WHERE user_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
-        console.log(query);
 
 
 
@@ -1752,7 +1741,7 @@ exports.updateActiveStatus = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1789,7 +1778,6 @@ exports.updateBlockStatus = async (req, res) => {
 
         query += 'WHERE user_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
-        console.log(query);
 
 
 
@@ -1812,7 +1800,7 @@ exports.updateBlockStatus = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,

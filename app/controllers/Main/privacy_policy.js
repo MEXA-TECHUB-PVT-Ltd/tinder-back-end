@@ -23,7 +23,7 @@ exports.addPrivacyPolicy = async(req,res)=>{
          }
     }
     catch (err) {
-        console.log(err)
+
         res.json({
             message: "Error Occurred",
             status: false,
@@ -61,7 +61,7 @@ exports.getAllPrivacyPlicies = async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+
         res.json({
             message: "Error Occurred",
             status: false,
@@ -98,7 +98,7 @@ exports.viewPrivacyPolicy = async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+
         res.json({
             message: "Error Occurred",
             status: false,
@@ -134,7 +134,7 @@ exports.viewActivePrivacyPolicy = async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+
         res.json({
             message: "Error Occurred",
             status: false,
@@ -172,7 +172,7 @@ exports.updatePrivacyPolicy= async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+
         res.json({
             message: "Error Occurred",
             status: false,
@@ -220,7 +220,7 @@ exports.updateStatus= async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+
         res.json({
             message: "Error Occurred",
             status: false,

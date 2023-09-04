@@ -25,7 +25,7 @@ exports.addTermsAndConditions = async(req,res)=>{
          }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -61,7 +61,7 @@ exports.getAllTermsAndConditions = async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -98,7 +98,7 @@ exports.viewTermsAndCondition = async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -133,7 +133,7 @@ exports.viewActiveTermsAndCondition = async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -171,7 +171,7 @@ exports.updateTermsAndCondition= async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,
@@ -218,7 +218,7 @@ exports.updateStatus= async(req,res)=>{
 
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error Occurred",
             status: false,

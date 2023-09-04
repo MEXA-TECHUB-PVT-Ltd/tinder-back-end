@@ -32,7 +32,6 @@ exports.addpreference = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
         res.json({
             message: "Error",
             status: false,
@@ -86,7 +85,6 @@ exports.updatepreference = async (req, res) => {
 
         query += 'WHERE preference_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
-        console.log(query);
 
        const result = await pool.query(query , values);
 

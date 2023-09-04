@@ -50,7 +50,6 @@ exports.sendNotification = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
         res.json({
             message: "Error",
             status: false,
@@ -162,7 +161,6 @@ exports.getUserNotifications = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
         res.json({
             message: "Error",
             status: false,

@@ -41,7 +41,6 @@ exports.importContacts = async (req, res) => {
         }
     
         const values = contacts.map(contact => [contact.user_id, contact.contact_name, contact.phone_number]);
-        console.log(values)
 
         const query = format(`INSERT INTO contacts
          (user_id , contact_name , phone_number)
@@ -119,7 +118,6 @@ exports.blockContact = async (req, res) => {
         let phone_number = req.body.phone_number;
         const user_id  = req.body.user_id;
        
-        console.log(phone_number)
         if(!phone_number || !user_id){
             return(
                 res.json({
@@ -131,7 +129,6 @@ exports.blockContact = async (req, res) => {
 
         const query = "UPDATE contacts SET block = $1 WHERE user_id = $2 AND phone_number = $3 RETURNING*";
         const result   = await pool.query(query , [true, user_id , phone_number]);
-        console.log(result)
         if(result.rows[0]){
             res.json({
                 message : "BLOCKED",
@@ -172,7 +169,6 @@ exports.unblockContact = async (req, res) => {
 
         const query = "UPDATE contacts SET block = $1 WHERE user_id = $2 AND phone_number=$3 RETURNING *";
         const result   = await pool.query(query , [false, user_id , phone_number]);
-        console.log(result)
 
         if(result.rows[0]){
             res.json({

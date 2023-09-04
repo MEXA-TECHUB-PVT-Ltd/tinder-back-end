@@ -44,7 +44,6 @@ exports.registerAdmin =async (req,res,next)=>{
 
 
     const result = await pool.query(query , [email , hashPassword]);
-    console.log(result.rows[0])
 
     if(result.rows[0]){
         res.json({
@@ -89,7 +88,6 @@ exports.login = async (req,res)=>{
         const query = 'SELECT * FROM admins WHERE email = $1';
         const foundResult = await pool.query(query  , [email]);
 
-        console.log(foundResult)
 
 
         if (foundResult.rowCount == 0) {
@@ -200,12 +198,10 @@ exports.updateProfile = async (req, res) => {
         
         query += 'WHERE admin_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
-        console.log(query);
 
 
         const result = await pool.query(query , values)
 
-        console.log(result)
 
         if(result.rows[0]){
             res.json({
@@ -223,7 +219,6 @@ exports.updateProfile = async (req, res) => {
 
     }
     catch (err) {
-        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -257,7 +252,6 @@ exports.getAllAdmins = async(req,res)=>{
         }
     }
     catch (err) {
-        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -297,7 +291,6 @@ exports.passwordUpdate = async(req,res)=>{
 
         query += 'WHERE email = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
-        console.log(query);
         const result = await pool.query(query , values)
 
         if(result.rows[0]){
@@ -315,7 +308,6 @@ exports.passwordUpdate = async(req,res)=>{
         }
     }
     catch (err) {
-        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,

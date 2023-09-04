@@ -32,7 +32,7 @@ exports.addRelation_type= async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+
         res.json({
             message: "Error",
             status: false,
@@ -78,7 +78,6 @@ exports.updateRelation_type = async (req, res) => {
 
         query += 'WHERE relation_type_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
-        console.log(query);
 
        const result = await pool.query(query , values);
 

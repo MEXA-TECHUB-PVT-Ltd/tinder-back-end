@@ -55,7 +55,6 @@ exports.viewCards = async (req, res) => {
 
         const excludeProfileIds = await getSwipedProfileIds(user_id, 'right');
         const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender , common_interest , recently_online);
-        console.log(excludeProfileIds)
         if (potentialMatches) {
             res.json({
                 message: "Fetched Successfully",
@@ -128,7 +127,6 @@ exports.swipe = async (req, res) => {
 
 
         if (checkResult.rowCount > 0) {
-            console.log("in update")
             // already swiped by this user , no matter left or right
             let updateQuery = 'UPDATE swipes SET user_id = $1  , swipe_direction= $2 ,swiped_user_id = $3 ,liked = $4, superLiked= $5 WHERE user_id = $6 AND swiped_user_id = $7 RETURNING*';
             result = await pool.query(updateQuery, [user_id, swipe_direction, swiped_user_id, liked, superLiked, user_id, swiped_user_id]);
@@ -147,7 +145,6 @@ exports.swipe = async (req, res) => {
 
         const checkMatch = await checkForMatch(user_id, swiped_user_id, pool);
         if (checkMatch) {
-            console.log("match found true");
             match_found = true
         } else {
             match_found = false;
@@ -199,7 +196,6 @@ exports.getAllMatches = async (req, res) => {
         const foundResult = await pool.query(query, [user_id]);
         if (foundResult.rows) {
             if (foundResult.rows[0]) {
-                console.log("inside")
                 user_details = foundResult.rows[0]
             }
         } else {
@@ -213,7 +209,6 @@ exports.getAllMatches = async (req, res) => {
         }
 
 
-        console.log(user_id);
         const result = await getMatches(user_id);
         if (result) {
             user_details.matches = result
@@ -255,7 +250,6 @@ exports.rewindSwipe = async (req, res) => {
         const foundQuery = 'SELECT * FROM swipes WHERE user_id = $1 AND swiped_user_id = $2';
         const foundResult = await pool.query(foundQuery, [user_id, swiped_user_id]);
 
-        console.log(foundResult)
         if (foundResult.rowCount == 0) {
             return (
                 res.json({
@@ -275,7 +269,6 @@ exports.rewindSwipe = async (req, res) => {
             }
         }
 
-        console.log(foundResult.rows[0])
         let swipe_id = foundResult.rows[0].swipe_id;
         if (swipe_id) {
             const query = 'DELETE FROM swipes WHERE swipe_id = $1 RETURNING *';
@@ -632,22 +625,20 @@ exports.boost = async (req, res) => {
 
         const query = 'UPDATE users SET profile_boosted = $1 WHERE user_id = $2 RETURNING*';
         const result = await pool.query(query, [true, user_id]);
-        console.log(result)
 
         if (result.rows.length > 0) {
-            const job = schedule.scheduleJob(new Date(Date.now() + 1 * 60 * 1000), async function () {
+            console.log(Date(Date.now() + 30 * 60 * 1000))
+            const job = schedule.scheduleJob(new Date(Date.now() + 30 * 60 * 1000), async function () {
                 const query = 'UPDATE users SET profile_boosted = $1 WHERE user_id = $2 RETURNING *';
                 const result = await pool.query(query, [false, user_id]);
-                console.log('Profile boosting time is over');
-
                 const deleteScheduledTaskQuery  = "DELETE FROM schedules_tables WHERE user_id = $1 RETURNING*";
                 const deltedResult  = await pool.query(deleteScheduledTaskQuery , [user_id]);
                 if(deltedResult.rows[0]){
-                    console.log("scheduled tasks deleted successfully");
+                    console.log('boosted profile time end')
                 }
             });
 
-            let executeat = new Date(Date.now() + (1*60*1000));
+            let executeat = new Date(Date.now() + (30*60*1000));
             let start_at = new Date(Date.now());
 
             // Save the scheduled job details to the DB,
@@ -656,16 +647,14 @@ exports.boost = async (req, res) => {
 
             const insertResult = await pool.query(insertLogQuery, [user_id , executeat, start_at]);
             if(insertResult.rows[0]){
-                console.log("Task saved in Database");
             }else{
-                console.log("Could not save task");
             }
 
-
+            result.rows[0].boost_start =start_at
+            result.rows[0].boost_end = executeat;
             setTimeout(function () {
                 job.cancel();
-                console.log('Profile boosting time is over');
-            }, 1 * 60 * 1000);
+            }, 30 * 60 * 1000);
 
             if (result.rows.length > 0) {
                 res.json({
@@ -892,15 +881,12 @@ async function checkForMatch(userId, swipedUserId, pool) {
     `, [userId, swipedUserId]);
 
         if (result.rowCount === 2) {
-            console.log(userId)
 
             // Both users have swiped right on each other, so it's a match!
             // Send a message to both users here
-            console.log(`Match found between user ${userId} and user ${swipedUserId}`);
             return true;
         } else {
             // Not a match yet
-            console.log(`No match yet between user ${userId} and user ${swipedUserId}`);
             return false;
         }
     } catch (err) {
@@ -926,7 +912,6 @@ async function getMatches(userId) {
         )
       `, [userId]);
 
-        console.log(result)
         return result.rows;
     } catch (err) {
         throw err;
@@ -940,11 +925,10 @@ async function getSwipedProfileIds(userId, direction) {
         const query = 'SELECT swiped_user_id FROM swipes WHERE user_id = $1 AND swipe_direction = $2';
         const values = [userId, direction];
         const result = await pool.query(query, values);
-        console.log(result)
         return result.rows.map(row => (row.swiped_user_id));
     }
     catch (err) {
-        console.log(err)
+        
     }
 
 }
@@ -952,7 +936,6 @@ async function getSwipedProfileIds(userId, direction) {
 async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance, start_age, end_age, gender, common_interest , recently_online) {
     try {
 
-        console.log(typeof (latitude))
         let query;
 
         if (gender && !recently_online) {
@@ -1065,12 +1048,10 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
             let interestQuery = 'SELECT * FROM users WHERE user_id = $1';
             let current_user_interest;
             let interestResult = await pool.query(interestQuery , [userId]);
-            console.log(interestResult.rows[0].interest)
 
             if(interestResult){
                 if(interestResult.rows[0].interest){
                     current_user_interest = interestResult.rows[0].interest;
-                    console.log(current_user_interest)
                 }
             }
 
@@ -1088,7 +1069,6 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
                 })
             }
             else{
-                console.log("could not find any interest of this user")
             }
            
         }
@@ -1096,7 +1076,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
         return array;
     }
     catch (err) {
-        console.log(err)
+        
     }
 
 }

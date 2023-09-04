@@ -25,7 +25,6 @@ exports.createPost = async (req,res)=>{
 
         const query = 'INSERT INTO posts (user_id , post_images) VALUES ($1 , $2) RETURNING*'
         const result = await pool.query(query ,  [user_id , post_images])
-        console.log(result)
         if(result.rows[0]){
             res.json({
                 message: "post created ",
@@ -39,7 +38,6 @@ exports.createPost = async (req,res)=>{
 
     }
     catch(err){
-        console.log(err)
         res.json({
             message : "Error Occurrd ",
             status :false ,
