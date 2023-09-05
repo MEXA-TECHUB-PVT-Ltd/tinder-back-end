@@ -3,7 +3,8 @@ const { pool } = require("../../config/db.config");
 const { use } = require("../../routes/Swipes/swipeRoute");
 const schedule = require('node-schedule');
 const fs = require('fs');
-var moment  = require('moment-timezone');
+const moment = require('moment-timezone');
+const pakistanTime = moment().tz('Asia/Karachi');
 
 exports.viewCards = async (req, res) => {
     try {
@@ -25,7 +26,7 @@ exports.viewCards = async (req, res) => {
         const gender = req.query.gender;
         const start_age = req.query.start_age;
         const end_age = req.query.end_age;
-        const common_interest= req.query.common_interest;
+        const common_interest = req.query.common_interest;
         const recently_online = req.query.recently_online;
 
         if (start_age || end_age) {
@@ -54,7 +55,7 @@ exports.viewCards = async (req, res) => {
         let offset = (page - 1) * limit;
 
         const excludeProfileIds = await getSwipedProfileIds(user_id, 'right');
-        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender , common_interest , recently_online);
+        const potentialMatches = await getPotentialMatches(latitude, longitude, user_id, excludeProfileIds, limit, offset, radius, start_age, end_age, gender, common_interest, recently_online);
         if (potentialMatches) {
             res.json({
                 message: "Fetched Successfully",
@@ -627,34 +628,33 @@ exports.boost = async (req, res) => {
         const result = await pool.query(query, [true, user_id]);
 
         if (result.rows.length > 0) {
-            console.log(Date(Date.now() + 30 * 60 * 1000))
             const job = schedule.scheduleJob(new Date(Date.now() + 30 * 60 * 1000), async function () {
                 const query = 'UPDATE users SET profile_boosted = $1 WHERE user_id = $2 RETURNING *';
                 const result = await pool.query(query, [false, user_id]);
-                const deleteScheduledTaskQuery  = "DELETE FROM schedules_tables WHERE user_id = $1 RETURNING*";
-                const deltedResult  = await pool.query(deleteScheduledTaskQuery , [user_id]);
-                if(deltedResult.rows[0]){
+                const deleteScheduledTaskQuery = "DELETE FROM schedules_tables WHERE user_id = $1 RETURNING*";
+                const deltedResult = await pool.query(deleteScheduledTaskQuery, [user_id]);
+                if (deltedResult.rows[0]) {
                     console.log('boosted profile time end')
                 }
             });
 
-            let executeat = new Date(Date.now() + (30*60*1000));
+            let executeat = new Date(Date.now() + (30 * 60 * 1000));
             let start_at = new Date(Date.now());
 
             // Save the scheduled job details to the DB,
 
             const insertLogQuery = 'INSERT INTO schedules_tables (user_id , executeat , start_at) VALUES($1, $2, $3) RETURNING *';
 
-            const insertResult = await pool.query(insertLogQuery, [user_id , executeat, start_at]);
-            if(insertResult.rows[0]){
-            }else{
+            const insertResult = await pool.query(insertLogQuery, [user_id, executeat, start_at]);
+            if (insertResult.rows[0]) {
+            } else {
             }
 
-            result.rows[0].boost_start =start_at
+            result.rows[0].boost_start = start_at
             result.rows[0].boost_end = executeat;
             setTimeout(function () {
                 job.cancel();
-            }, 30 * 60 * 1000);
+            }, 1 * 60 * 1000);
 
             if (result.rows.length > 0) {
                 res.json({
@@ -687,9 +687,9 @@ exports.boost = async (req, res) => {
 
 exports.getAllBoostedProfiles = async (req, res) => {
     const client = await pool.connect();
-    const {user_id} = req.query;
+    const { user_id } = req.query;
     try {
-        if(!user_id){
+        if (!user_id) {
             return res.json({
                 message: "User_id is required",
                 status: false,
@@ -834,8 +834,8 @@ exports.getAllUserWhoLikedYou = async (req, res) => {
     }
 }
 
-exports.getAllPlatformMatchesCount = async (req,res)=>{
-   try{
+exports.getAllPlatformMatchesCount = async (req, res) => {
+    try {
         const query = `SELECT COUNT(*) AS total_matches
         FROM (
           SELECT LEAST(user_id, swiped_user_id) AS user1,
@@ -848,27 +848,27 @@ exports.getAllPlatformMatchesCount = async (req,res)=>{
         `;
 
         const result = await pool.query(query);
-        if(result.rows[0]){
+        if (result.rows[0]) {
             res.json({
-                message  : "Success",
-                status : true,
-                result : result.rows[0]
+                message: "Success",
+                status: true,
+                result: result.rows[0]
             })
         }
-        else{
+        else {
             res.json({
                 message: " Could not found",
-                status : false
+                status: false
             })
         }
     }
-    catch(err){
+    catch (err) {
         res.json({
             message: "Error Occured",
-            status : false ,
-            error : err.message
+            status: false,
+            error: err.message
         })
-         }
+    }
 }
 
 async function checkForMatch(userId, swipedUserId, pool) {
@@ -928,12 +928,12 @@ async function getSwipedProfileIds(userId, direction) {
         return result.rows.map(row => (row.swiped_user_id));
     }
     catch (err) {
-        
+
     }
 
 }
 
-async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance, start_age, end_age, gender, common_interest , recently_online) {
+async function getPotentialMatches(latitude, longitude, userId, excludeProfileIds, limit, offset, maxDistance, start_age, end_age, gender, common_interest, recently_online) {
     try {
 
         let query;
@@ -959,7 +959,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
 `;
         }
 
-        else if(recently_online && !gender){
+        else if (recently_online && !gender) {
             query = `
             SELECT *,
             EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
@@ -980,7 +980,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
     `;
         }
 
-        else if(gender && recently_online){
+        else if (gender && recently_online) {
             query = `
             SELECT *,
             EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
@@ -1001,7 +1001,7 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
     
             `;
         }
-        else{
+        else {
             query = `
             SELECT *,
             EXTRACT(YEAR FROM age(current_date , to_date(dob, 'YYYY-MM-DD'))) AS age_years,
@@ -1022,61 +1022,61 @@ async function getPotentialMatches(latitude, longitude, userId, excludeProfileId
         }
 
         let values;
-        if(gender){       
-              values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, gender];
+        if (gender) {
+            values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit, gender];
         }
-        else{
-             values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit];
+        else {
+            values = [latitude, longitude, userId, excludeProfileIds, maxDistance, offset, limit];
 
         }
         const result = await pool.query(query, values);
         let array = result.rows;
 
-        if(start_age && end_age){
-            if(array){
+        if (start_age && end_age) {
+            if (array) {
                 array = array.filter(record => {
-                    if(record.age_years){
-                        if(record.age_years >=start_age && record.age_years <=end_age){
+                    if (record.age_years) {
+                        if (record.age_years >= start_age && record.age_years <= end_age) {
                             return record
                         }
                     }
                 })
-             }
+            }
         }
-         
-        if(common_interest == 'true'){
+
+        if (common_interest == 'true') {
             let interestQuery = 'SELECT * FROM users WHERE user_id = $1';
             let current_user_interest;
-            let interestResult = await pool.query(interestQuery , [userId]);
+            let interestResult = await pool.query(interestQuery, [userId]);
 
-            if(interestResult){
-                if(interestResult.rows[0].interest){
+            if (interestResult) {
+                if (interestResult.rows[0].interest) {
                     current_user_interest = interestResult.rows[0].interest;
                 }
             }
 
-            if(current_user_interest){
-                array = array.filter(record =>{
-                    if(record.interest){
+            if (current_user_interest) {
+                array = array.filter(record => {
+                    if (record.interest) {
                         const contains = current_user_interest.some(element => {
                             return record.interest.includes(element);
-                          });
-    
-                          if(contains){
-                            return(record)
-                          }
+                        });
+
+                        if (contains) {
+                            return (record)
+                        }
                     }
                 })
             }
-            else{
+            else {
             }
-           
+
         }
-        
+
         return array;
     }
     catch (err) {
-        
+
     }
 
 }

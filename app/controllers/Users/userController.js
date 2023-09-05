@@ -624,6 +624,8 @@ exports.viewProfile = async (req, res) => {
                 'email', u.email,
                 'phone_number', u.phone_number,
                 'password', u.password,
+                'incognito_status',u.incognito_status,
+                'device_id',u.device_id,
                 'dob', u.dob,
                 'block_status' , u.block_status,
                 'verified_by_email' , u.verified_by_email,

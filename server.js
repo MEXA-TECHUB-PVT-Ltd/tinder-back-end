@@ -60,6 +60,7 @@ app.use('/reports', require("./app/routes/Main/report_user_route"));
 app.use('/contacts', require("./app/routes/Main/contactRoute"));
 app.use('/notification', require("./app/routes/Main/notificationsRoute"));
 app.use('/search', require("./app/routes/Main/search_filterRoute"));
+app.use('/incognito', require("./app/routes/Main/incognito_userRoute"));
 
 
 
@@ -123,24 +124,6 @@ socket.on("message", async (data) => {
   console.log(sender_id , receiver_id)
 
   const user = activeUsers.find((user) => user.userId == receiver_id);
-
-
-  // whenever new message send from any side if chat room  is deleted it will be active immediately  and will show in chat list
-
-  // const deletionStateActiveForChatRoom = await chat_roomModel.findOneAndUpdate({
-  //     $or: [
-  //         { user_1_id: sender_id, user_2_id: receiver_id },
-  //         { user_1_id: receiver_id, user_2_id: sender_id },
-  //     ]
-  // }
-  //     ,
-  //     {
-  //         deletedForUser1: false,
-  //         deletedForUser2: false
-  //     }, { new: true })
-
-
-
   const chatRoomId = await getChatRoom_id(sender_id, receiver_id);
   console.log(chatRoomId);
   let messageStored = await storeMessage(sender_id, receiver_id, message_type, media_type, chatRoomId, message, reply_on_message_id);
@@ -173,9 +156,6 @@ socket.on('stopTyping', ({ chatRoomId, userId, receiverId }) => {
 
 socket.on('receipts' , async (data) => {
   let result;
-  // sender is the sender of message .
-  // receiver is the receiver of the message .
-  // event will call on receiver side to notify sender that i have seen or delivered you r messages 
   const {message_ids , receipt_type , sender_id , receiver_id}= data
   const user = activeUsers.find((user) => user.userId === sender_id);  // sending to sender of the messages
   if(receipt_type == 'delivered'){
