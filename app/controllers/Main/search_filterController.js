@@ -192,7 +192,7 @@ exports.searchByGender = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,
@@ -423,7 +423,7 @@ exports.searchByAge = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,
@@ -627,7 +627,7 @@ exports.searchByName = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,
@@ -820,7 +820,6 @@ exports.searchByCommonInterest = async (req, res) => {
         let array;
         if (result.rows) {
             array = result.rows[0].json_agg;
-            console.log(array)
             let interestQuery = 'SELECT * FROM users WHERE user_id = $1';
             let current_user_interest;
             let interestResult = await pool.query(interestQuery, [user_id]);
@@ -828,18 +827,15 @@ exports.searchByCommonInterest = async (req, res) => {
             if (interestResult) {
                 if (interestResult.rows[0].interest) {
                     current_user_interest = interestResult.rows[0].interest;
-                    console.log("current user interests", current_user_interest)
                 }
             }
 
 
             if (current_user_interest) {
                 array = array.filter(record => {
-                    console.log(record.interest)
                     if (record.interest) {
                         if (record.interest.length > 0) {
                             const hasCommonValues = record.interest.some(item => current_user_interest.includes(item.interest_id));
-                            console.log(hasCommonValues)
                             if (hasCommonValues) {
                                 return (record)
                             }
@@ -849,7 +845,6 @@ exports.searchByCommonInterest = async (req, res) => {
                 })
             }
             else {
-                console.log("could not find any interest of this user")
             }
         }
 
@@ -873,7 +868,7 @@ exports.searchByCommonInterest = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,
@@ -915,7 +910,6 @@ exports.searchByDistance= async (req, res) => {
         longitude = parseFloat (longitude);
         latitude = parseFloat(latitude)
 
-        console.log(longitude , latitude)
         let result;
 
         if (!page || !limit) {
@@ -1098,7 +1092,7 @@ exports.searchByDistance= async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,
@@ -1293,7 +1287,7 @@ exports.recentlyActive = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,

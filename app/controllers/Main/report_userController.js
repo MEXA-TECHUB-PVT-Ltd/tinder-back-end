@@ -57,7 +57,7 @@ exports.reportUser = async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,
@@ -113,7 +113,7 @@ exports.getReportedUsers= async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,
@@ -180,7 +180,7 @@ exports.get_a_reported_user= async (req, res) => {
         }
     }
     catch (err) {
-        console.log(err)
+        
         res.json({
             message: "Error",
             status: false,

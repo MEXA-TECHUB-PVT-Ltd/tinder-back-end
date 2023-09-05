@@ -25,7 +25,6 @@ module.exports = (req, res, next) => {
 
     else{
         const token = req.headers.authorization.split(' ')[1];
-        console.log(token)
           
 
         if(!token){
@@ -43,7 +42,6 @@ module.exports = (req, res, next) => {
               return res.status(401).json({ message: 'unauthorize' , status:false });
             }
             else if(decoded){
-                console.log(decoded)
               if(decoded.id != req.query.current_user_id){
                 return (
                   res.status(401).json({

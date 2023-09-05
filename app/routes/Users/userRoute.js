@@ -11,6 +11,7 @@ router.post("/login_with_ph" , controller.login_with_ph);
 router.put("/updateProfile" , controller.updateProfile);
 router.put("/updatePassword" , controller.updatePassword)
 router.get("/getAllUsers"  , controller.getAllUsers)
+router.get("/getAllUsersFiltered"  , controller.getAllUsersFiltered)
 router.get("/usersByPreference"  , controller.usersByPreference)
 router.get("/usersByCategory"  , controller.usersByCategory)
 router.get("/usersByInterest"  , controller.usersByInterest)
