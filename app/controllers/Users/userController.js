@@ -40,7 +40,6 @@ exports.registerWithPh = async (req, res, next) => {
         const query = 'INSERT INTO users (phone_number , password , profile_boosted , login_type, device_id) VALUES ($1 , $2 , $3 , $4, $5) RETURNING*'
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
-
         const result = await pool.query(query, [phone_number, hashPassword, false, 'phone_number', device_id]);
         if (result.rowCount < 1) {
             return res.json({
@@ -48,6 +47,7 @@ exports.registerWithPh = async (req, res, next) => {
                 status: false,
             });
         }
+        
         const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
         res.json({
             message: "Signed up Successfully",
@@ -59,7 +59,7 @@ exports.registerWithPh = async (req, res, next) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -123,7 +123,6 @@ exports.registerWithEmail = async (req, res, next) => {
         const salt = await bcrypt.genSalt(10);
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
-
         const result = await pool.query(query, [email, hashPassword, false, login_type, device_id]);
         if (result.rowCount < 1) {
             return res.json({
@@ -131,6 +130,7 @@ exports.registerWithEmail = async (req, res, next) => {
                 status: false,
             });
         }
+        
         const token = jwt.sign({ id: result.rows[0].user_id }, process.env.TOKEN, { expiresIn: '30d' });
         res.json({
             message: "Signed up Successfully",
@@ -141,7 +141,7 @@ exports.registerWithEmail = async (req, res, next) => {
 
     }
     catch (err) {
-        
+        console.log(err.message)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -159,6 +159,7 @@ exports.login_with_email = async (req, res) => {
         let password = req.body.password;
         const device_id = req.body.device_id;
         let updateDevice;
+        console.log(email, password)
         if (!email || !password || !device_id) {
             return (
                 res.status(400).json({
@@ -171,6 +172,9 @@ exports.login_with_email = async (req, res) => {
         const query = 'SELECT * FROM users WHERE email = $1';
         const foundResult = await pool.query(query, [email]);
 
+        console.log('1')
+
+
         if (foundResult.rowCount == 0) {
             return (
                 res.status(400).json({
@@ -179,7 +183,9 @@ exports.login_with_email = async (req, res) => {
                 })
             )
         }
+        console.log("foundResult.rows[0].password ", foundResult.rows)
         const vaildPass = await bcrypt.compare(password, foundResult.rows[0].password);
+        console.log(vaildPass)
         if (!vaildPass) {
             return (
                 res.status(401).json({
@@ -222,7 +228,7 @@ exports.login_with_email = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -249,6 +255,8 @@ exports.login_with_ph = async (req, res) => {
 
         const query = 'SELECT * FROM users WHERE phone_number = $1';
         const foundResult = await pool.query(query, [phone_number]);
+
+        console.log(foundResult)
 
         if (foundResult.rowCount == 0) {
             return (
@@ -300,7 +308,7 @@ exports.login_with_ph = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -515,6 +523,7 @@ exports.updateProfile = async (req, res) => {
 
         query += 'WHERE user_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
+        console.log(query);
 
 
 
@@ -536,7 +545,7 @@ exports.updateProfile = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -600,7 +609,7 @@ exports.updatePassword = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -624,8 +633,6 @@ exports.viewProfile = async (req, res) => {
                 'email', u.email,
                 'phone_number', u.phone_number,
                 'password', u.password,
-                'incognito_status',u.incognito_status,
-                'device_id',u.device_id,
                 'dob', u.dob,
                 'block_status' , u.block_status,
                 'verified_by_email' , u.verified_by_email,
@@ -681,18 +688,10 @@ exports.viewProfile = async (req, res) => {
                 ),
                 'match_count', (
                     SELECT COUNT(*)
-                    FROM users mu
-                    WHERE mu.user_id IN (
-                        SELECT swiped_user_id
-                        FROM swipes
-                        WHERE user_id = u.user_id AND swipe_direction = 'right'
-                            AND swiped_user_id IN (
-                                SELECT user_id
-                                FROM swipes
-                                WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
-                            )
-                    )
+                    FROM swipes
+                    WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
                 )
+                        
                 )
         ) 
         FROM users u
@@ -704,23 +703,46 @@ exports.viewProfile = async (req, res) => {
         const result = await pool.query(query, [user_id]);
 
 
-        if (result.rowCount > 0) {
-            res.json({
+        if (result.rowCount < 1) {
+            return res.json({
+                message: "Could not Fetch profile , may be the user_id is wrong",
+                status: false
+            })
+
+        }
+        const getUserProfiles = `SELECT * FROM swipes WHERE swiped_user_id = $1`;
+        const result1 = await pool.query(getUserProfiles, [user_id]);
+        if (result.rowCount < 1) {
+            return res.json({
                 message: "User profile fetched",
                 status: true,
                 result: result.rows[0]
             })
+
         }
-        else {
-            res.json({
-                message: "Could not Fetch profile , may be the user_id is wrong",
-                status: false
+
+        const match_user_id = result1.rows.map(user => user.user_id)
+
+        const getUserData = `SELECT * FROM users WHERE user_id = ANY($1::int[]);`
+        const results2 = await pool.query(getUserData, [match_user_id])
+        if (results2.rowCount < 1) {
+            return res.json({
+                message: "User profile fetched",
+                status: true,
+                result: result.rows[0]
             })
+
         }
+        result.rows[0].userSwipedRight = results2.rows;
+        res.json({
+            message: "User profile fetched",
+            status: true,
+            result: result.rows[0]
+        })
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -735,7 +757,7 @@ exports.getAllUsers = async (req, res) => {
         let limit = req.query.limit;
         let page = req.query.page
 
-        let result;
+        let tempResult;
 
         if (!page || !limit) {
             const query = `
@@ -813,9 +835,9 @@ exports.getAllUsers = async (req, res) => {
             LEFT OUTER JOIN school sch ON u.school = sch.school_id
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id`
-            result = await pool.query(query);
+            tempResult = await pool.query(query);
         }
-
+        
         if (page && limit) {
             limit = parseInt(limit);
             let offset = (parseInt(page) - 1) * limit;
@@ -896,141 +918,50 @@ exports.getAllUsers = async (req, res) => {
             LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
             LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id
             LIMIT $1 OFFSET $2`;
-            result = await pool.query(query, [limit, offset]);
+            tempResult = await pool.query(query, [limit, offset]);
         }
-        const query1 = `SELECT * FROM swipes WHERE swiped_user_id = $1 AND swipe_direction = 'right'`
-        const result1 = await pool.query(query1, [101044]);
-        if (result.rows) {
-            res.json({
-                message: "Fetched",
-                status: true,
-                users_counts: result.rows[0].json_agg.length,
-                result: result.rows[0].json_agg
-            })
-        }
-        else {
-            res.json({
+         if (tempResult.rowCount < 1) {
+            return res.json({
                 message: "could not fetch",
                 status: false
             })
+
         }
-    }
-    catch (err) {
-        res.json({
-            message: "Error",
-            status: false,
-            error: err.message
-        })
-    }
-    finally {
-        client.release();
-    }
-
-}
-exports.getAllUsersFiltered = async (req, res) => {
-    const client = await pool.connect();
-    const { user_id } = req.query;
-    try {
-        let result;
-
-        const query = `
-            SELECT json_agg(
-                json_build_object(
-                    'user_id', u.user_id,
-                    'name', u.name,
-                    'email', u.email,
-                    'phone_number', u.phone_number,
-                    'incognito_status',u.incognito_status,
-                    'device_id',u.device_id,
-                    'password', u.password,
-                    'dob', u.dob,
-                    'block_status' , u.block_status,
-                    'verified_by_email' , u.verified_by_email,
-                    'school', json_build_object(
-                        'school_id', sch.school_id,
-                        'name', sch.name,
-                        'created_at', sch.created_at,
-                        'updated_at', sch.updated_at
-                    ),
-                    'interest', (
-                        SELECT json_agg(
-                            json_build_object(
-                                'interest_id', i.interest_id,
-                                'interest_name', i.interest_name,
-                                'created_at', i.created_at,
-                                'updated_at', i.updated_at
-                            )
-                        )
-                        FROM interests i
-                        WHERE i.interest_id IN (SELECT unnest(u.interest))
-                    ),
-                    'job_title', u.job_title,
-                    'company', u.company,
-                    'category', json_build_object(
-                        'category_id', cat.category_id,
-                        'category_name', cat.category_name,
-                        'created_at', cat.created_at,
-                        'trash', cat.trash
-                    ),
-                    'active_status', u.active_status,
-                    'gender', u.gender,
-                    'images', u.images,
-                    'preference', json_build_object(
-                        'preference_id', pref.preference_id,
-                        'preference_type_id', pref.preference_type_id,
-                        'preference', pref.preference,
-                        'trash', pref.trash
-                    ),
-                    'longitude', u.longitude,
-                    'latitude', u.latitude,
-                    'city', u.city,
-                    'country', u.country,
-                    'bio', u.bio,
-                    'login_type', u.login_type,
-                    'created_at', u.created_at,
-                    'updated_at', u.updated_at,
-                    'profile_boosted', u.profile_boosted,
-                    'relation_type', json_build_object(
-                        'relation_type_id', rt.relation_type_id,
-                        'type', rt.type,
-                        'created_at', rt.created_at,
-                        'updated_at', rt.updated_at
-                    ),
-                    'match_count', (
-                        SELECT COUNT(*)
-                        FROM swipes
-                        WHERE swiped_user_id = u.user_id AND swipe_direction = 'right'
-                    )
-                )
-            )
-            FROM users u
-            LEFT OUTER JOIN relation_type rt ON u.relation_type = rt.relation_type_id
-            LEFT OUTER JOIN school sch ON u.school = sch.school_id
-            LEFT OUTER JOIN preferences pref ON u.preference = pref.preference_id
-            LEFT OUTER JOIN categories cat ON u.category_id::integer = cat.category_id`
-        result = await pool.query(query);
-        let finalResults = [];
+        let result = tempResult.rows[0].json_agg
         await Promise.all(
-            result.rows[0].json_agg.map((item, index) => {
-                if (item.user_id != user_id && item.incognito_status == false) {
-                    finalResults.push(item)
+            
+            result.map(async (user, index) => {
+                
+                if (user.match_count > 0) {
+                    
+                    const findUserIds = `SELECT * FROM swipes WHERE swiped_user_id = $1 AND swipe_direction = 'right'`
+                    const getFindUserIds = await pool.query(findUserIds, [user.user_id])
+                    if (getFindUserIds.rowCount > 0) {
+                        const ids = getFindUserIds.rows.map(user => user.user_id)
+                        const getUserDataWhoSwiped = `SELECT * FROM users WHERE user_id = ANY($1::int[]);`
+                        const getDataForUserDataWhoSwiped = await pool.query(getUserDataWhoSwiped, [ids])
+                        
+                        if (getDataForUserDataWhoSwiped.rowCount > 0) {
+                            result[index].userSwipedRight = getDataForUserDataWhoSwiped.rows;
+                            
+                        }
+                        else {
+                            result[index].userSwipedRight = []
+                        }
+                        
+                    }
+                    console.log(result)
                 }
+
             })
         )
-
-        if (result.rows) {
-            res.json({
-                message: "Fetched",
-                status: true,
-                result: finalResults
-            })
-        }
-        else {
-            res.json({
-                message: "could not fetch",
-                status: false
-            })
-        }
+        console.log(result)
+        res.json({
+            message: "Fetched",
+            status: true,
+            users_counts: result.length,
+            result: result
+        })
     }
     catch (err) {
         res.json({
@@ -1044,6 +975,7 @@ exports.getAllUsersFiltered = async (req, res) => {
     }
 
 }
+
 exports.usersByPreference = async (req, res) => {
     try {
         const preference_id = req.query.preference_id;
@@ -1217,7 +1149,7 @@ exports.usersByPreference = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1400,7 +1332,7 @@ exports.usersByCategory = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1583,7 +1515,7 @@ exports.usersByInterest = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1630,7 +1562,7 @@ exports.getAllSubscribedUsers = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1669,7 +1601,7 @@ exports.updateSubscribedStatus = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1721,6 +1653,7 @@ exports.updateActiveStatus = async (req, res) => {
 
         query += 'WHERE user_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
+        console.log(query);
 
 
 
@@ -1743,7 +1676,7 @@ exports.updateActiveStatus = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1780,6 +1713,7 @@ exports.updateBlockStatus = async (req, res) => {
 
         query += 'WHERE user_id = $1 RETURNING*'
         query = query.replace(/,\s+WHERE/g, " WHERE");
+        console.log(query);
 
 
 
@@ -1802,7 +1736,7 @@ exports.updateBlockStatus = async (req, res) => {
 
     }
     catch (err) {
-        
+        console.log(err)
         res.json({
             message: "Error Occurred",
             status: false,
@@ -1827,44 +1761,19 @@ exports.deleteUser = async (req, res) => {
         const query = 'DELETE FROM users WHERE user_id = $1 RETURNING *';
         const result = await pool.query(query, [user_id]);
 
-        if (result.rowCount < 1) {
+        if (result.rowCount > 0) {
+            res.status(200).json({
+                message: "Deletion successfull",
+                status: true,
+                deletedRecord: result.rows[0]
+            })
+        }
+        else {
             res.status(404).json({
                 message: "Could not delete . Record With this Id may not found or req.body may be empty",
                 status: false,
             })
         }
-        let deletedFrom = `user entry deleted from `
-        const query1 = `DELETE FROM swipes WHERE user_id = $1 OR swiped_user_id=$1`
-        const query2 = `DELETE FROM posts WHERE user_id = $1`
-        const query3 = `DELETE FROM reported_users_records WHERE user_id = $1 OR reported_by = $1`
-        const query4 = `DELETE FROM contacts WHERE user_id = $1`
-        const query5 = `DELETE FROM schedules_tables WHERE user_id = $1`
-        const result1 = await pool.query(query1, [user_id]);
-        const result2 = await pool.query(query2, [user_id]);
-        const result3 = await pool.query(query3, [user_id]);
-        const result4 = await pool.query(query4, [user_id]);
-        const result5 = await pool.query(query5, [user_id]);
-        if (result1.rowCount > 0) {
-            deletedFrom += `swipes, `
-        }
-        if (result2.rowCount > 0) {
-            deletedFrom += `posts, `
-        }
-        if (result3.rowCount > 0) {
-            deletedFrom += `reported_users_records, `
-        }
-        if (result4.rowCount > 0) {
-            deletedFrom += `contacts, `
-        }
-        if (result5.rowCount > 0) {
-            deletedFrom += `schedules_tables, `
-        }
-        res.status(200).json({
-            message: "Deletion successfull",
-            status: true,
-            deletedRecord: result.rows[0],
-            deletedFrom:deletedFrom
-        })
 
     }
     catch (err) {

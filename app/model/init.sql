@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS users (
   school INTEGER,
   interest INTEGER[],
   job_title TEXT ,
-  company TEXT,
-  category_id TEXT,
-  active_status BOOLEAN,
+  company TEXT ,
+  category_id TEXT ,
+  active_status BOOLEAN ,
   gender TEXT ,
   bio TEXT,
   images TEXT[],
@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS users (
   profile_boosted BOOLEAN,
   last_online_time TIMESTAMPTZ,
   subscribed_status BOOLEAN,
-  verified_by_email BOOLEAN DEFAULT false
+  verified_by_email BOOLEAN DEFAULT false,
+  incognito_status BOOLEAN DEFAULT false,
+  device_id TEXT
 );
 
 
