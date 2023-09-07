@@ -82,9 +82,9 @@ exports.viewCards = async (req, res) => {
 exports.swipe = async (req, res) => {
     const client = await pool.connect();
     try {
-        const user_id = req.body.user_id;  // user who is swiping
-        const swiped_user_id = req.body.swiped_user_id; // who is being swiped
-        const swipe_direction = req.body.swipe_direction; // ie left or right
+        const user_id = req.body.user_id;  
+        const swiped_user_id = req.body.swiped_user_id; 
+        const swipe_direction = req.body.swipe_direction; 
         const likeType = req.body.likeType;
         let liked;
         let superLiked;

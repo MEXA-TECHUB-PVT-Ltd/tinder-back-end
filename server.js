@@ -72,21 +72,12 @@ app.use('/incognito', require("./app/routes/Main/incognito_userRoute"));
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });
-
-
-
-
-
 const io = require("socket.io")(server, {
   cors: {
       origin: "*"
   },
 });
-
-
 let activeUsers = [];
-
-
 io.on("connection" , (socket)=>{
    // add new User
    socket.on("new-user-add", (newUserId) => {
